@@ -165,7 +165,7 @@ summary::-webkit-details-marker { display: none; }
 /* ---------- pick card ---------- */
 .bq-pick { border: 2px solid var(--ink); background: #fff; display: flex; flex-wrap: wrap; }
 .bq-pick__media { flex: 1 1 200px; min-height: 200px; }
-.bq-pick__body { flex: 2 1 300px; padding: 20px 22px; display: flex; flex-direction: column; gap: 12px; }
+.bq-pick__body { flex: 2 1 300px; min-width: 0; padding: 20px 22px; display: flex; flex-direction: column; gap: 12px; }
 .bq-pick__top { display: flex; justify-content: space-between; gap: 12px; align-items: center; flex-wrap: wrap; }
 .bq-pick__name { font-size: 26px; margin: 0; font-weight: 900; letter-spacing: -0.02em; }
 .bq-pick__name a { text-decoration: none; }
@@ -212,6 +212,7 @@ summary::-webkit-details-marker { display: none; }
 .bq-cmp tbody td:first-child { font-weight: 700; }
 .bq-cmp .bq-cmp__group th { position: static; background: var(--ink); color: #fff; padding: 9px 14px; text-align: left; font-size: 12px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
 .bq-cmp .bq-cmp__group th:first-child { position: sticky; background: var(--ink); }
+.bq-cmp__group-label { position: sticky; left: 14px; display: inline-block; }
 .bq-cmp .bq-cmp__final { border-top: 2px solid var(--ink); }
 .bq-cmp .bq-cmp__final td { vertical-align: top; padding: 14px; }
 .bq-cell-v { font-family: var(--mono); font-size: 13px; }
@@ -553,6 +554,7 @@ summary::-webkit-details-marker { display: none; }
   .bq-cmp__name { font-size: 17px; }
   .bq-cmp__price strong { font-size: 19px; }
   .bq-cmp .bq-cmp__group th { padding: 8px 10px; }
+  .bq-cmp__group-label { left: 10px; }
   .bq-pick__name { font-size: 22px; }
   .bq-summary { padding: 18px 16px; }
 }

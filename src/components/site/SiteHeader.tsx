@@ -9,7 +9,7 @@ export function SiteHeader({ categories }: { categories: Category[] }) {
         <Link href="/" style={{ textDecoration: 'none' }}>
           <span style={{ fontWeight: 900, fontSize: 28, letterSpacing: '-0.04em', color: 'var(--ink)' }}>Bras<span style={{ color: 'var(--orange-mid)' }}>Q</span></span>
         </Link>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: '1 1 300px', justifyContent: 'flex-end', maxWidth: 520 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: '1 1 300px', minWidth: 0, justifyContent: 'flex-end', maxWidth: 520 }}>
           <Link href="/search" style={{ flex: '1 1 auto', minWidth: 0, border: '2px solid var(--ink)', background: '#fff', padding: '10px 14px', fontSize: 14, color: 'var(--muted-2)', textDecoration: 'none', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Search a product or buying guide</Link>
           <Link href="/newsletter" style={{ fontSize: 14, fontWeight: 700, textDecoration: 'none', background: 'var(--ink)', color: '#fff', padding: '12px 16px', whiteSpace: 'nowrap' }}>Newsletter</Link>
         </div>
