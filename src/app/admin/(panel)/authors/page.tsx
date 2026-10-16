@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { adminApi } from '@/lib/admin-client';
 import type { Author } from '@/lib/types';
 import { useConfirm } from '@/components/admin/ConfirmDialog';
+import { Pagination, usePageParam, type Paged } from '@/components/admin/Pagination';
 
 type Row = Author & { _count: { posts: number } };
 type Edit = { id: string; name: string; slug: string; role: string; short: string; bio: string; email: string; avatarUrl: string; facts: string; expertise: string; career: string; sortOrder: number; showOnHome: boolean };
@@ -22,7 +23,9 @@ export default function AuthorsPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [edit, setEdit] = useState<Edit | null>(null);
   const [error, setError] = useState('');
-  const load = useCallback(() => adminApi<{ authors: Row[] }>('/authors').then((d) => setRows(d.authors)), []);
+  const [page, setPage] = usePageParam();
+  const [meta, setMeta] = useState<Paged | null>(null);
+  const load = useCallback(() => adminApi<{ authors: Row[] } & Paged>(`/authors?page=${page}`).then((d) => { setRows(d.authors); setMeta(d); }), [page]);
   useEffect(() => { load(); }, [load]);
 
   const save = async (e: React.FormEvent) => {
@@ -48,7 +51,7 @@ export default function AuthorsPage() {
 
   return (
     <>
-      <div className="ad-head"><h1>Authors</h1><button className="ad-btn ad-btn--primary" onClick={() => setEdit({ ...blank, sortOrder: rows.length })}>+ New author</button></div>
+      <div className="ad-head"><h1>Authors</h1><button className="ad-btn ad-btn--primary" onClick={() => setEdit({ ...blank, sortOrder: meta?.total ?? rows.length })}>+ New author</button></div>
       {edit && (
         <form className="ad-card ad-form" style={{ marginBottom: 16, maxWidth: 760 }} onSubmit={save}>
           <div className="ad-2"><label>Name<input required {...f('name')} /></label><label>Slug<input placeholder="from name" {...f('slug')} /></label></div>
@@ -77,6 +80,7 @@ export default function AuthorsPage() {
           </tr>
         ))}</tbody>
       </table>
+      {meta && <Pagination {...meta} onChange={setPage} />}
     </>
   );
 }

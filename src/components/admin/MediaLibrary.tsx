@@ -3,6 +3,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { adminApi } from '@/lib/admin-client';
 import type { Media } from '@/lib/types';
 import { useConfirm } from './ConfirmDialog';
+import { Pagination, usePageParam, type Paged } from './Pagination';
+
+const PAGE_SIZE = 24;
 
 /** Upload (drag & drop, file picker or remote URL) + grid of stored media. */
 export function MediaLibrary({ onPick }: { onPick?: (m: Media) => void }) {
@@ -14,8 +17,13 @@ export function MediaLibrary({ onPick }: { onPick?: (m: Media) => void }) {
   const [copied, setCopied] = useState('');
   const input = useRef<HTMLInputElement>(null);
   const confirm = useConfirm();
+  // the page lives in the URL on the Media page, but in local state inside the editor's picker
+  const [urlPage, setUrlPage] = usePageParam();
+  const [localPage, setLocalPage] = useState(1);
+  const [page, setPage] = onPick ? [localPage, setLocalPage] : [urlPage, setUrlPage];
+  const [meta, setMeta] = useState<Paged | null>(null);
 
-  const load = useCallback(() => adminApi<{ media: Media[] }>('/media').then((d) => setItems(d.media)), []);
+  const load = useCallback(() => adminApi<{ media: Media[] } & Paged>(`/media?page=${page}&pageSize=${PAGE_SIZE}`).then((d) => { setItems(d.media); setMeta(d); }), [page]);
   useEffect(() => { load(); }, [load]);
 
   const upload = async (files: FileList | File[]) => {
@@ -26,14 +34,15 @@ export function MediaLibrary({ onPick }: { onPick?: (m: Media) => void }) {
         fd.append('file', file);
         await adminApi('/media', { method: 'POST', body: fd });
       }
-      await load();
+      // newest first: show the upload on page 1
+      if (page > 1) setPage(1); else await load();
     } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   };
 
   const importUrl = async () => {
     if (!remote) return;
     setBusy(true); setError('');
-    try { await adminApi('/media/import', { method: 'POST', json: { url: remote } }); setRemote(''); await load(); }
+    try { await adminApi('/media/import', { method: 'POST', json: { url: remote } }); setRemote(''); if (page > 1) setPage(1); else await load(); }
     catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   };
 
@@ -83,6 +92,7 @@ export function MediaLibrary({ onPick }: { onPick?: (m: Media) => void }) {
           ))}
         </div>
       )}
+      {meta && <Pagination {...meta} onChange={setPage} />}
     </div>
   );
 }

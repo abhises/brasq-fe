@@ -3,11 +3,14 @@ import { useCallback, useEffect, useState } from 'react';
 import { adminApi } from '@/lib/admin-client';
 import type { Subscriber } from '@/lib/types';
 import { useConfirm } from '@/components/admin/ConfirmDialog';
+import { Pagination, usePageParam, type Paged } from '@/components/admin/Pagination';
 
 export default function SubscribersPage() {
   const [rows, setRows] = useState<Subscriber[] | null>(null);
   const confirm = useConfirm();
-  const load = useCallback(() => adminApi<{ subscribers: Subscriber[] }>('/subscribers').then((d) => setRows(d.subscribers)), []);
+  const [page, setPage] = usePageParam();
+  const [meta, setMeta] = useState<Paged | null>(null);
+  const load = useCallback(() => adminApi<{ subscribers: Subscriber[] } & Paged>(`/subscribers?page=${page}`).then((d) => { setRows(d.subscribers); setMeta(d); }), [page]);
   useEffect(() => { load(); }, [load]);
   const remove = async (s: Subscriber) => {
     if (!(await confirm({ title: 'Remove subscriber?', message: `${s.email} will be removed from the newsletter list.`, confirmLabel: 'Remove' }))) return;
@@ -15,7 +18,7 @@ export default function SubscribersPage() {
   };
   return (
     <>
-      <div className="ad-head"><h1>Subscribers {rows && <span className="ad-hint">({rows.length})</span>}</h1><a className="ad-btn" href="/api/admin/subscribers?format=csv">Export CSV</a></div>
+      <div className="ad-head"><h1>Subscribers {meta && <span className="ad-hint">({meta.total})</span>}</h1><a className="ad-btn" href="/api/admin/subscribers?format=csv">Export CSV</a></div>
       {!rows ? <p>Loading…</p> : (
         <table className="ad-table">
           <thead><tr><th>Email</th><th>Source</th><th>Signed up</th><th></th></tr></thead>
@@ -25,6 +28,7 @@ export default function SubscribersPage() {
           </tbody>
         </table>
       )}
+      {meta && <Pagination {...meta} onChange={setPage} />}
     </>
   );
 }

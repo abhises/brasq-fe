@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { Pagination, usePageParam, type Paged } from '@/components/admin/Pagination';
 import { adminApi } from '@/lib/admin-client';
 import { postUrl } from '@/lib/format';
 import type { PostCard, PostStatus } from '@/lib/types';
@@ -13,17 +14,21 @@ export default function PostsPage() {
   const [status, setStatus] = useState('');
   const [q, setQ] = useState('');
   const [error, setError] = useState('');
+  const [page, setPage] = usePageParam();
+  const [meta, setMeta] = useState<Paged | null>(null);
+  // a new filter starts again at page 1
+  const filter = (fn: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => { fn(e.target.value); if (page > 1) setPage(1); };
 
   useEffect(() => {
     const t = setTimeout(() => {
-      const sp = new URLSearchParams();
+      const sp = new URLSearchParams({ page: String(page) });
       if (type) sp.set('type', type);
       if (status) sp.set('status', status);
       if (q) sp.set('q', q);
-      adminApi<{ posts: Row[] }>(`/posts?${sp}`).then((d) => setPosts(d.posts)).catch((e) => setError(e.message));
+      adminApi<{ posts: Row[] } & Paged>(`/posts?${sp}`).then((d) => { setPosts(d.posts); setMeta(d); }).catch((e) => setError(e.message));
     }, 200);
     return () => clearTimeout(t);
-  }, [type, status, q]);
+  }, [type, status, q, page]);
 
   return (
     <>
@@ -32,11 +37,11 @@ export default function PostsPage() {
         <Link href="/admin/posts/new" className="ad-btn ad-btn--primary">+ New post</Link>
       </div>
       <div className="ad-filters">
-        <input placeholder="Search title or slug" value={q} onChange={(e) => setQ(e.target.value)} />
-        <select value={type} onChange={(e) => setType(e.target.value)}>
+        <input placeholder="Search title or slug" value={q} onChange={filter(setQ)} />
+        <select value={type} onChange={filter(setType)}>
           <option value="">All types</option><option value="guide">Buying guides</option><option value="review">Reviews</option><option value="page">Pages</option>
         </select>
-        <select value={status} onChange={(e) => setStatus(e.target.value)}>
+        <select value={status} onChange={filter(setStatus)}>
           <option value="">Any status</option><option value="published">Published</option><option value="draft">Draft</option>
         </select>
       </div>
@@ -60,6 +65,7 @@ export default function PostsPage() {
           </tbody>
         </table>
       )}
+      {meta && <Pagination {...meta} onChange={setPage} />}
     </>
   );
 }

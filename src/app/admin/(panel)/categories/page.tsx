@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { adminApi } from '@/lib/admin-client';
 import type { Category } from '@/lib/types';
 import { useConfirm } from '@/components/admin/ConfirmDialog';
+import { Pagination, usePageParam, type Paged } from '@/components/admin/Pagination';
 
 type Row = Category & { _count: { posts: number } };
 const blank = { id: '', name: '', slug: '', intro: '', sortOrder: 0 };
@@ -12,7 +13,9 @@ export default function CategoriesPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [edit, setEdit] = useState<typeof blank | null>(null);
   const [error, setError] = useState('');
-  const load = useCallback(() => adminApi<{ categories: Row[] }>('/categories').then((d) => setRows(d.categories)), []);
+  const [page, setPage] = usePageParam();
+  const [meta, setMeta] = useState<Paged | null>(null);
+  const load = useCallback(() => adminApi<{ categories: Row[] } & Paged>(`/categories?page=${page}`).then((d) => { setRows(d.categories); setMeta(d); }), [page]);
   useEffect(() => { load(); }, [load]);
 
   const save = async (e: React.FormEvent) => {
@@ -32,7 +35,7 @@ export default function CategoriesPage() {
 
   return (
     <>
-      <div className="ad-head"><h1>Categories</h1><button className="ad-btn ad-btn--primary" onClick={() => setEdit({ ...blank, sortOrder: rows.length })}>+ New category</button></div>
+      <div className="ad-head"><h1>Categories</h1><button className="ad-btn ad-btn--primary" onClick={() => setEdit({ ...blank, sortOrder: meta?.total ?? rows.length })}>+ New category</button></div>
       {edit && (
         <form className="ad-card ad-form" style={{ marginBottom: 16, maxWidth: 640 }} onSubmit={save}>
           <div className="ad-2">
@@ -54,6 +57,7 @@ export default function CategoriesPage() {
           </tr>
         ))}</tbody>
       </table>
+      {meta && <Pagination {...meta} onChange={setPage} />}
     </>
   );
 }
