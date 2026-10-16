@@ -2,13 +2,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import { adminApi } from '@/lib/admin-client';
 import type { Subscriber } from '@/lib/types';
+import { useConfirm } from '@/components/admin/ConfirmDialog';
 
 export default function SubscribersPage() {
   const [rows, setRows] = useState<Subscriber[] | null>(null);
+  const confirm = useConfirm();
   const load = useCallback(() => adminApi<{ subscribers: Subscriber[] }>('/subscribers').then((d) => setRows(d.subscribers)), []);
   useEffect(() => { load(); }, [load]);
   const remove = async (s: Subscriber) => {
-    if (!confirm(`Remove ${s.email}?`)) return;
+    if (!(await confirm({ title: 'Remove subscriber?', message: `${s.email} will be removed from the newsletter list.`, confirmLabel: 'Remove' }))) return;
     await adminApi(`/subscribers/${s.id}`, { method: 'DELETE' }); load();
   };
   return (

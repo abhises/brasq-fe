@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { adminApi } from '@/lib/admin-client';
 import { postUrl } from '@/lib/format';
 import type { Author, Category, Media, Post, PostStatus, PostType, StickyBar } from '@/lib/types';
+import { useConfirm } from './ConfirmDialog';
 import { MediaPicker } from './MediaPicker';
 
 type Form = {
@@ -68,6 +69,7 @@ type Tab = 'html' | 'css' | 'jsonld' | 'preview';
 
 export function PostEditor({ id }: { id?: string }) {
   const router = useRouter();
+  const confirm = useConfirm();
   const [form, setForm] = useState<Form>(id ? EMPTY : { ...EMPTY, html: STARTER_HTML });
   const [loaded, setLoaded] = useState(!id);
   const [cats, setCats] = useState<Category[]>([]);
@@ -117,7 +119,7 @@ export function PostEditor({ id }: { id?: string }) {
   }, [save, dirty]);
 
   const remove = async () => {
-    if (!id || !confirm(`Delete "${form.title}"? This cannot be undone.`)) return;
+    if (!id || !(await confirm({ title: `Delete "${form.title}"?`, message: 'This cannot be undone.' }))) return;
     await adminApi(`/posts/${id}`, { method: 'DELETE' });
     router.push('/admin');
   };

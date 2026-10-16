@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { adminApi } from '@/lib/admin-client';
 import type { Author } from '@/lib/types';
+import { useConfirm } from '@/components/admin/ConfirmDialog';
 
 type Row = Author & { _count: { posts: number } };
 type Edit = { id: string; name: string; slug: string; role: string; short: string; bio: string; email: string; avatarUrl: string; facts: string; expertise: string; career: string; sortOrder: number; showOnHome: boolean };
@@ -17,6 +18,7 @@ const toEdit = (a: Author): Edit => ({
 });
 
 export default function AuthorsPage() {
+  const confirm = useConfirm();
   const [rows, setRows] = useState<Row[]>([]);
   const [edit, setEdit] = useState<Edit | null>(null);
   const [error, setError] = useState('');
@@ -39,7 +41,7 @@ export default function AuthorsPage() {
     } catch (err) { setError((err as Error).message); }
   };
   const remove = async (a: Row) => {
-    if (!confirm(`Delete author "${a.name}"? Their ${a._count.posts} posts will be left without an author.`)) return;
+    if (!(await confirm({ title: `Delete author "${a.name}"?`, message: `Their ${a._count.posts} posts will be left without an author.` }))) return;
     await adminApi(`/authors/${a.id}`, { method: 'DELETE' }); load();
   };
   const f = (k: keyof Edit) => ({ value: edit![k] as string, onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setEdit({ ...edit!, [k]: e.target.value }) });

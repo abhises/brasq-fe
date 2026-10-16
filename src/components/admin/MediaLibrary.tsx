@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { adminApi } from '@/lib/admin-client';
 import type { Media } from '@/lib/types';
+import { useConfirm } from './ConfirmDialog';
 
 /** Upload (drag & drop, file picker or remote URL) + grid of stored media. */
 export function MediaLibrary({ onPick }: { onPick?: (m: Media) => void }) {
@@ -12,6 +13,7 @@ export function MediaLibrary({ onPick }: { onPick?: (m: Media) => void }) {
   const [remote, setRemote] = useState('');
   const [copied, setCopied] = useState('');
   const input = useRef<HTMLInputElement>(null);
+  const confirm = useConfirm();
 
   const load = useCallback(() => adminApi<{ media: Media[] }>('/media').then((d) => setItems(d.media)), []);
   useEffect(() => { load(); }, [load]);
@@ -36,7 +38,7 @@ export function MediaLibrary({ onPick }: { onPick?: (m: Media) => void }) {
   };
 
   const remove = async (m: Media) => {
-    if (!confirm(`Delete ${m.filename}? Posts that use this URL will show a broken image.`)) return;
+    if (!(await confirm({ title: `Delete ${m.filename}?`, message: 'Posts that use this URL will show a broken image.' }))) return;
     await adminApi(`/media/${m.id}`, { method: 'DELETE' });
     load();
   };

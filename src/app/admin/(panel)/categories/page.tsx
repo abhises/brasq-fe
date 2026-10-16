@@ -2,11 +2,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { adminApi } from '@/lib/admin-client';
 import type { Category } from '@/lib/types';
+import { useConfirm } from '@/components/admin/ConfirmDialog';
 
 type Row = Category & { _count: { posts: number } };
 const blank = { id: '', name: '', slug: '', intro: '', sortOrder: 0 };
 
 export default function CategoriesPage() {
+  const confirm = useConfirm();
   const [rows, setRows] = useState<Row[]>([]);
   const [edit, setEdit] = useState<typeof blank | null>(null);
   const [error, setError] = useState('');
@@ -24,7 +26,7 @@ export default function CategoriesPage() {
     } catch (err) { setError((err as Error).message); }
   };
   const remove = async (c: Row) => {
-    if (!confirm(`Delete category "${c.name}"? Its ${c._count.posts} posts will be left without a category.`)) return;
+    if (!(await confirm({ title: `Delete category "${c.name}"?`, message: `Its ${c._count.posts} posts will be left without a category.` }))) return;
     await adminApi(`/categories/${c.id}`, { method: 'DELETE' }); load();
   };
 
