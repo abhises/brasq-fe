@@ -3,14 +3,14 @@ import { useCallback, useEffect, useState } from 'react';
 import { adminApi } from '@/lib/admin-client';
 import type { Subscriber } from '@/lib/types';
 import { useConfirm } from '@/components/admin/ConfirmDialog';
-import { Pagination, usePageParam, type Paged } from '@/components/admin/Pagination';
+import { Pagination, usePaging, type Paged } from '@/components/admin/Pagination';
 
 export default function SubscribersPage() {
   const [rows, setRows] = useState<Subscriber[] | null>(null);
   const confirm = useConfirm();
-  const [page, setPage] = usePageParam();
+  const { page, pageSize, setPage, setPageSize } = usePaging();
   const [meta, setMeta] = useState<Paged | null>(null);
-  const load = useCallback(() => adminApi<{ subscribers: Subscriber[] } & Paged>(`/subscribers?page=${page}`).then((d) => { setRows(d.subscribers); setMeta(d); }), [page]);
+  const load = useCallback(() => adminApi<{ subscribers: Subscriber[] } & Paged>(`/subscribers?page=${page}&pageSize=${pageSize}`).then((d) => { setRows(d.subscribers); setMeta(d); }), [page, pageSize]);
   useEffect(() => { load(); }, [load]);
   const remove = async (s: Subscriber) => {
     if (!(await confirm({ title: 'Remove subscriber?', message: `${s.email} will be removed from the newsletter list.`, confirmLabel: 'Remove' }))) return;
@@ -28,7 +28,7 @@ export default function SubscribersPage() {
           </tbody>
         </table>
       )}
-      {meta && <Pagination {...meta} onChange={setPage} />}
+      {meta && <Pagination {...meta} onChange={setPage} onPageSizeChange={setPageSize} />}
     </>
   );
 }

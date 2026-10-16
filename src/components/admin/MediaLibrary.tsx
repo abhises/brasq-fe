@@ -3,9 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { adminApi } from '@/lib/admin-client';
 import type { Media } from '@/lib/types';
 import { useConfirm } from './ConfirmDialog';
-import { Pagination, usePageParam, type Paged } from './Pagination';
-
-const PAGE_SIZE = 24;
+import { DEFAULT_PAGE_SIZE, Pagination, usePaging, type Paged, type Paging } from './Pagination';
 
 /** Upload (drag & drop, file picker or remote URL) + grid of stored media. */
 export function MediaLibrary({ onPick }: { onPick?: (m: Media) => void }) {
@@ -18,12 +16,15 @@ export function MediaLibrary({ onPick }: { onPick?: (m: Media) => void }) {
   const input = useRef<HTMLInputElement>(null);
   const confirm = useConfirm();
   // the page lives in the URL on the Media page, but in local state inside the editor's picker
-  const [urlPage, setUrlPage] = usePageParam();
+  const urlPaging = usePaging();
   const [localPage, setLocalPage] = useState(1);
-  const [page, setPage] = onPick ? [localPage, setLocalPage] : [urlPage, setUrlPage];
+  const [localSize, setLocalSize] = useState(DEFAULT_PAGE_SIZE);
+  const { page, pageSize, setPage, setPageSize }: Paging = onPick
+    ? { page: localPage, pageSize: localSize, setPage: setLocalPage, setPageSize: (n) => { setLocalSize(n); setLocalPage(1); } }
+    : urlPaging;
   const [meta, setMeta] = useState<Paged | null>(null);
 
-  const load = useCallback(() => adminApi<{ media: Media[] } & Paged>(`/media?page=${page}&pageSize=${PAGE_SIZE}`).then((d) => { setItems(d.media); setMeta(d); }), [page]);
+  const load = useCallback(() => adminApi<{ media: Media[] } & Paged>(`/media?page=${page}&pageSize=${pageSize}`).then((d) => { setItems(d.media); setMeta(d); }), [page, pageSize]);
   useEffect(() => { load(); }, [load]);
 
   const upload = async (files: FileList | File[]) => {
@@ -92,7 +93,7 @@ export function MediaLibrary({ onPick }: { onPick?: (m: Media) => void }) {
           ))}
         </div>
       )}
-      {meta && <Pagination {...meta} onChange={setPage} />}
+      {meta && <Pagination {...meta} onChange={setPage} onPageSizeChange={setPageSize} />}
     </div>
   );
 }

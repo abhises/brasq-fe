@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { adminApi } from '@/lib/admin-client';
 import type { Author } from '@/lib/types';
 import { useConfirm } from '@/components/admin/ConfirmDialog';
-import { Pagination, usePageParam, type Paged } from '@/components/admin/Pagination';
+import { Pagination, usePaging, type Paged } from '@/components/admin/Pagination';
 
 type Row = Author & { _count: { posts: number } };
 type Edit = { id: string; name: string; slug: string; role: string; short: string; bio: string; email: string; avatarUrl: string; facts: string; expertise: string; career: string; sortOrder: number; showOnHome: boolean };
@@ -23,9 +23,9 @@ export default function AuthorsPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [edit, setEdit] = useState<Edit | null>(null);
   const [error, setError] = useState('');
-  const [page, setPage] = usePageParam();
+  const { page, pageSize, setPage, setPageSize } = usePaging();
   const [meta, setMeta] = useState<Paged | null>(null);
-  const load = useCallback(() => adminApi<{ authors: Row[] } & Paged>(`/authors?page=${page}`).then((d) => { setRows(d.authors); setMeta(d); }), [page]);
+  const load = useCallback(() => adminApi<{ authors: Row[] } & Paged>(`/authors?page=${page}&pageSize=${pageSize}`).then((d) => { setRows(d.authors); setMeta(d); }), [page, pageSize]);
   useEffect(() => { load(); }, [load]);
 
   const save = async (e: React.FormEvent) => {
@@ -80,7 +80,7 @@ export default function AuthorsPage() {
           </tr>
         ))}</tbody>
       </table>
-      {meta && <Pagination {...meta} onChange={setPage} />}
+      {meta && <Pagination {...meta} onChange={setPage} onPageSizeChange={setPageSize} />}
     </>
   );
 }

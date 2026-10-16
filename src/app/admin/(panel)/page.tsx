@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { Pagination, usePageParam, type Paged } from '@/components/admin/Pagination';
+import { Pagination, usePaging, type Paged } from '@/components/admin/Pagination';
 import { adminApi } from '@/lib/admin-client';
 import { postUrl } from '@/lib/format';
 import type { PostCard, PostStatus } from '@/lib/types';
@@ -14,21 +14,21 @@ export default function PostsPage() {
   const [status, setStatus] = useState('');
   const [q, setQ] = useState('');
   const [error, setError] = useState('');
-  const [page, setPage] = usePageParam();
+  const { page, pageSize, setPage, setPageSize } = usePaging();
   const [meta, setMeta] = useState<Paged | null>(null);
   // a new filter starts again at page 1
   const filter = (fn: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => { fn(e.target.value); if (page > 1) setPage(1); };
 
   useEffect(() => {
     const t = setTimeout(() => {
-      const sp = new URLSearchParams({ page: String(page) });
+      const sp = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
       if (type) sp.set('type', type);
       if (status) sp.set('status', status);
       if (q) sp.set('q', q);
       adminApi<{ posts: Row[] } & Paged>(`/posts?${sp}`).then((d) => { setPosts(d.posts); setMeta(d); }).catch((e) => setError(e.message));
     }, 200);
     return () => clearTimeout(t);
-  }, [type, status, q, page]);
+  }, [type, status, q, page, pageSize]);
 
   return (
     <>
@@ -65,7 +65,7 @@ export default function PostsPage() {
           </tbody>
         </table>
       )}
-      {meta && <Pagination {...meta} onChange={setPage} />}
+      {meta && <Pagination {...meta} onChange={setPage} onPageSizeChange={setPageSize} />}
     </>
   );
 }

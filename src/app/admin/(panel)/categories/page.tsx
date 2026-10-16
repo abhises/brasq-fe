@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { adminApi } from '@/lib/admin-client';
 import type { Category } from '@/lib/types';
 import { useConfirm } from '@/components/admin/ConfirmDialog';
-import { Pagination, usePageParam, type Paged } from '@/components/admin/Pagination';
+import { Pagination, usePaging, type Paged } from '@/components/admin/Pagination';
 
 type Row = Category & { _count: { posts: number } };
 const blank = { id: '', name: '', slug: '', intro: '', sortOrder: 0 };
@@ -13,9 +13,9 @@ export default function CategoriesPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [edit, setEdit] = useState<typeof blank | null>(null);
   const [error, setError] = useState('');
-  const [page, setPage] = usePageParam();
+  const { page, pageSize, setPage, setPageSize } = usePaging();
   const [meta, setMeta] = useState<Paged | null>(null);
-  const load = useCallback(() => adminApi<{ categories: Row[] } & Paged>(`/categories?page=${page}`).then((d) => { setRows(d.categories); setMeta(d); }), [page]);
+  const load = useCallback(() => adminApi<{ categories: Row[] } & Paged>(`/categories?page=${page}&pageSize=${pageSize}`).then((d) => { setRows(d.categories); setMeta(d); }), [page, pageSize]);
   useEffect(() => { load(); }, [load]);
 
   const save = async (e: React.FormEvent) => {
@@ -57,7 +57,7 @@ export default function CategoriesPage() {
           </tr>
         ))}</tbody>
       </table>
-      {meta && <Pagination {...meta} onChange={setPage} />}
+      {meta && <Pagination {...meta} onChange={setPage} onPageSizeChange={setPageSize} />}
     </>
   );
 }
