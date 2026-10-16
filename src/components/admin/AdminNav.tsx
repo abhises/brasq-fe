@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useRef } from 'react';
 import { logout } from '@/app/admin/actions';
 
 const LINKS: [string, string][] = [
@@ -11,10 +12,13 @@ const LINKS: [string, string][] = [
 export function AdminNav() {
   const path = usePathname();
   const current = (href: string) => (href === '/admin' ? path === '/admin' : path.startsWith(href));
+  const nav = useRef<HTMLElement>(null);
+  // On phones the nav is a sideways-scrolling row: keep the current section visible.
+  useEffect(() => { nav.current?.querySelector('[aria-current="page"]')?.scrollIntoView({ inline: 'nearest', block: 'nearest' }); }, [path]);
   return (
     <aside className="ad-side">
       <Link href="/admin" className="ad-side__logo">Bras<span>Q</span></Link>
-      <nav className="ad-side__nav">
+      <nav ref={nav} className="ad-side__nav">
         {LINKS.map(([href, label]) => (
           <Link key={href} href={href} className="ad-nav" aria-current={current(href) ? 'page' : undefined}>{label}</Link>
         ))}
