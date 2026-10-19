@@ -4,6 +4,9 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.SITE_URL ?? 'http://localhost:3000'),
   title: 'BrasQ – Independently tested for the home',
   description: 'BrasQ tests household products in a real home. Independent buying guides and reviews for kitchen, cleaning, sleep and home.',
+  icons: {
+    icon: "/favicon.png", // Path relative to the public folder
+  },
 };
 
 export const viewport: Viewport = { width: 'device-width', initialScale: 1 };
