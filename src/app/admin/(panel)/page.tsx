@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Pagination, usePaging, type Paged } from '@/components/admin/Pagination';
 import { adminApi } from '@/lib/admin-client';
-import { postUrl, TYPE_LABEL, typeLabel } from '@/lib/format';
+import { ADMIN_TYPE_LABEL as TYPE_LABEL, adminTypeLabel as typeLabel, postUrl } from '@/lib/format';
 import type { PostCard, PostStatus } from '@/lib/types';
 
 type Row = PostCard & { status: PostStatus; featured: boolean };

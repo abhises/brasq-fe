@@ -9,4 +9,8 @@ export const postUrl = (p: { type: string; slug: string }) => (PREFIX[p.type] ??
 export const TYPE_LABEL: Record<string, string> = { guide: 'Buying guide', review: 'Review', comparison: 'Comparison', informational: 'Explained', page: 'Page' };
 export const typeLabel = (type: string) => TYPE_LABEL[type] ?? type;
 
+/** Labels in the admin, where the informational type is called an info post. */
+export const ADMIN_TYPE_LABEL: Record<string, string> = { ...TYPE_LABEL, informational: 'Info post' };
+export const adminTypeLabel = (type: string) => ADMIN_TYPE_LABEL[type] ?? type;
+
 export const slugify = (s: string) => s.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');

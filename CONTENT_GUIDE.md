@@ -1,5 +1,9 @@
 # BrasQ content guide (for humans and Claude)
 
+> **New: Sections.** Posts and the front page can now be built from *sections* in the admin (Admin → Sections, the
+> Sections tab in the post editor, Admin → Front page). Each section is a form; the site renders the HTML. Everything
+> below still applies to hand-written HTML and to the templates of section types. See "Sections" at the end.
+
 Every post has an **HTML** field and a **CSS** field. The HTML is the whole page body; the site wraps it in
 the header, nav and footer. Style it with the `bq-*` classes from [`public/brasq.css`](public/brasq.css), and use the
 post's CSS field only for one-off tweaks (it is injected on that page only).
@@ -250,19 +254,90 @@ buy, verdict, FAQ.
 </article>
 ```
 
-## Informational posts (type `informational`, URL `/explained/<slug>`)
+## Info posts (type `informational`, URL `/explained/<slug>`)
 
-Explainers and how-tos that don't rank products. Same header and table-of-contents layout as a guide (use
-`<span class="bq-tag bq-tag--dark">Explained</span>`), with key takeaways in a `.bq-summary`, then normal `.bq-section`s
-using `.bq-p`, `.bq-numbered`, `.bq-table`, `.bq-grid` cards and these extras:
+Explainers and how-tos that answer a question rather than rank products. The reference post is
+*How long does a cordless vacuum battery last?*: open it in the admin and copy any block. **Admin → New post → Info post**
+starts from a skeleton with every component below. Wrap the page in `<article class="bq-article bq-infopost">`
+(wider text column, scroll-spy table of contents).
+
+| Block | Markup |
+|---|---|
+| Tag + read time | `<div class="bq-tagline"><span class="bq-tag bq-tag--dark">Explained</span><span>19 min read</span></div>` |
+| Copy-link button | `<button type="button" class="bq-btn-outline-sm" data-bq-copy>Copy link</button>` (inside `.bq-disclosure-row`) |
+| Hero with caption | `<figure class="bq-hero-fig"><div class="bq-photo"><img …></div><figcaption>…</figcaption></figure>` |
+| TOC that highlights the current section | `<aside class="bq-toc" data-bq-spy>…<a class="bq-toc__top" href="#">Back to top ↑</a></aside>` |
+| Stats strip | `<div class="bq-stats"><div><strong>800</strong><span>label</span></div>…</div>` |
+| Definition | `<div class="bq-def"><span class="bq-eyebrow">Definition</span><p><strong>Term:</strong> …</p></div>` |
+| Red product link | `<a class="bq-plink" href="/review/x">Product</a>` |
+| Boxed bar chart | `<figure class="bq-chart"><div class="bq-chart__head"><strong>Title</strong><span>unit</span></div><div class="bq-bars">…</div><figcaption>…</figcaption></figure>` (`.bq-bar--hl` = orange bar) |
+| Pull quote | `<blockquote class="bq-pull"><p>“…”</p><cite>Name, role</cite></blockquote>` |
+| Arrow list | `<ul class="bq-arrows"><li><span><strong>Lead.</strong> Text.</span></li></ul>` |
+| Safety warning | `<div class="bq-warn"><span class="bq-eyebrow">Safety warning</span><p>…</p></div>` |
+| Numbered steps | `<ol class="bq-nsteps"><li><span>Text</span></li></ol>`, or titled: `<ol class="bq-nsteps bq-nsteps--titled"><li><div><strong>Title</strong><p>Text</p></div></li></ol>` |
+| How-to strip | `<div class="bq-howto-meta"><span><strong>Time:</strong> …</span>…</div>` |
+| Myth / true / partly true | `<div class="bq-claims"><div class="bq-claim"><div><span class="bq-verdict-tag">Myth</span><strong>Claim</strong></div><p>Finding</p></div></div>` (`--true`, `--partly` variants) |
+| Two boxes with + / – | `<div class="bq-twobox"><div><span class="bq-eyebrow bq-eyebrow--yes">…</span><ul><li class="bq-plus">…</li><li class="bq-minus">…</li></ul></div>…</div>` |
+| Product rows | `<div class="bq-prows"><div class="bq-prow"><a class="bq-photo" …><img></a><div class="bq-prow__body"><span class="bq-eyebrow">Our top pick</span><a class="bq-prow__name" …>Name</a><p>…</p></div><a class="bq-btn bq-btn--black" … rel="sponsored nofollow" target="_blank">$339 from Amazon</a></div></div>` |
+| Author, history, sources | `.bq-about`, `<div class="bq-history bq-history--dated">` with `<time>`, `<div class="bq-history">` |
+| Keep reading (after `.bq-layout`) | `<section class="bq-keep"><h2 class="bq-h2 bq-h2--rule">Keep reading</h2><div class="bq-keep__grid"><a href="…"><div class="bq-photo"><img></div><span class="bq-eyebrow">Buying guide</span><strong>Title</strong></a></div></section>` |
+
+**Interactive estimator** (no script needed). The result is `budget ÷ (slider value × each selected factor × 52)`, capped:
 
 ```html
-<aside class="bq-callout"><span class="bq-eyebrow">From our tests</span><strong>Headline finding</strong><p>…</p></aside>
-
-<div class="bq-myths"><div class="bq-myth"><span class="bq-myth__k">Myth</span><strong>The claim.</strong>
-  <span class="bq-myth__k bq-myth__k--ok">What we found</span><p>…</p></div></div>
-
-<section id="i-next" class="bq-next"><span class="bq-eyebrow">Ready to choose one?</span><p>…</p>
-  <div class="bq-next__links"><a href="/guide/x"><span class="bq-eyebrow">Buying guide</span><strong>Title</strong><span>One line.</span></a></div>
-</section>
+<div class="bq-estimator" data-bq-estimator data-budget="650" data-cap="7">
+  <div class="bq-estimator__head">Battery life estimate</div>
+  <div class="bq-estimator__body">
+    <div class="bq-estimator__field"><strong>Home size</strong>
+      <div data-factor-group><button type="button" data-factor="0.4" aria-pressed="false">Apartment</button><button type="button" data-factor="0.7" aria-pressed="true">Up to 1,800 sq ft</button></div></div>
+    <label class="bq-estimator__field"><strong>Cleans per week: <span data-out="range">4</span></strong><input type="range" min="1" max="14" value="4" data-range></label>
+    <div class="bq-estimator__result"><div><span>Estimated battery life</span><strong data-out="result">4.5 years</strong></div><div><span>Full cycles per year</span><strong class="bq-mono" data-out="perYear">146</strong></div></div>
+  </div>
+</div>
 ```
+
+Older generated explainers also use `.bq-callout`, `.bq-myths` and the dark `.bq-next` "Ready to choose one?" band.
+
+## Sections
+
+**Building a post from sections.** New posts open on the *Sections* tab with a starting set of sections for the post type.
+Select a section in the outline to edit its form; the preview on the right follows. *+ Add section* inserts after the selected
+one; sections can be moved, duplicated, hidden and removed. The page layout is *With table of contents* (built from the
+section headings), *Full width*, or *No page frame*. Saving renders the HTML; the *HTML* tab shows it, and *Edit HTML by
+hand* turns the post back into a plain HTML post. An HTML post can switch with *Use sections*: its HTML becomes one
+*Custom HTML* section, so it looks the same.
+
+**Section types** (Admin → Sections). Built-in types are locked; *Duplicate* makes an editable copy. *+ New section type*:
+name, fields, template, CSS and sample data, with a live preview. Saving a type rebuilds every page that uses it.
+
+Field types: Text, Long text, Rich text (bold, italic, links; an empty line starts a paragraph), Number, Image, Link, Choice,
+Toggle, List (repeatable group of fields), Post, Product, Table cells (`a | b | c`, end a value with `*` to mark it best),
+HTML code.
+
+Template syntax (logic-free):
+
+| Write | Gives |
+|---|---|
+| `{{heading}}` | the value, HTML-escaped |
+| `{{{body}}}` | rich text / HTML as is |
+| `{{#picks}} … {{/picks}}` | repeat for each item of a list; for a filled-in value, show once |
+| `{{^image}} … {{/image}}` | show only when empty |
+| `{{product.name}}` `{{product.priceText}}` `{{product.url}}` `{{product.shopUrl}}` | product catalog values |
+| `{{post.title}}` `{{post.author.name}}` `{{post.updated}}` | the post the section is on |
+| `{{@number}}` `{{@n}}` `{{@first}}` `{{@last}}` | inside a list: 1, 01, first/last item |
+
+CSS of a custom type is limited to its own sections automatically (`.card` becomes `.bq-sec--<key> .card`; `:scope` styles
+the section itself) and is served at `/sections.css`. Use the site variables such as `var(--orange)`. No scripts: use the
+`data-bq-*` attributes above for interactive parts.
+
+**Products** (Admin → Products): name, score, price, photo, summary, review slug and shop links. A *Product* field fills
+empty fields of a pick card (name, score, photo, text, shop link, review link) from the catalog; saving a product rebuilds
+every page that uses it.
+
+**Front page** (Admin → Front page): the same editor with the front-page section types (hero, facts bar, post grid,
+categories, how we test, testers, newsletter). Changes are saved as a draft; *Preview on site* opens `/?preview=1` (signed
+in only), and *Publish* makes them live. Until the first publish, visitors see the original front page.
+
+**Automation API:** send `sections` instead of `html` when creating or updating a post:
+`{ "sections": { "layout": "toc", "items": [ { "id": "a1", "type": "short-answer", "data": { "items": [ { "text": "…" } ] } } ] } }`.
+`GET /api/admin/section-types` lists the types and their fields.

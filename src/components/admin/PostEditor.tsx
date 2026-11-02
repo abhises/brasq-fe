@@ -8,10 +8,12 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { adminApi } from '@/lib/admin-client';
-import { postUrl, typeLabel } from '@/lib/format';
-import type { Author, Category, Media, Post, PostStatus, PostType, StickyBar } from '@/lib/types';
+import { adminTypeLabel as typeLabel, postUrl } from '@/lib/format';
+import { newId } from '@/lib/sections-client';
+import type { Author, Category, Media, Post, PostStatus, PostType, SectionsDoc, SectionType, StickyBar } from '@/lib/types';
 import { useConfirm } from './ConfirmDialog';
 import { MediaPicker } from './MediaPicker';
+import { SectionsEditor, starterDoc } from './SectionsEditor';
 import { starterHtml } from './starters';
 
 type Form = {
@@ -19,12 +21,14 @@ type Form = {
   coverImage: string; seoTitle: string; seoDescription: string; jsonLd: string;
   testedCount: string; testWeeks: string; topPick: string; newsletterPopup: boolean; featured: boolean;
   categoryId: string; authorId: string; bar: Required<StickyBar>;
+  /** Section-based content; null = the post is edited as plain HTML */
+  sections: SectionsDoc | null;
 };
 
 const EMPTY_BAR = { name: '', score: '', price: '', shop: '', url: '', image: '' };
 const EMPTY: Form = {
   type: 'guide', status: 'draft', slug: '', title: '', excerpt: '', html: '', css: '', coverImage: '', seoTitle: '', seoDescription: '', jsonLd: '',
-  testedCount: '', testWeeks: '', topPick: '', newsletterPopup: false, featured: false, categoryId: '', authorId: '', bar: EMPTY_BAR,
+  testedCount: '', testWeeks: '', topPick: '', newsletterPopup: false, featured: false, categoryId: '', authorId: '', bar: EMPTY_BAR, sections: null,
 };
 
 /** Post types in the order the type picker shows them. */
@@ -36,6 +40,7 @@ const toForm = (p: Post): Form => ({
   testedCount: p.testedCount?.toString() ?? '', testWeeks: p.testWeeks?.toString() ?? '', topPick: p.topPick ?? '',
   newsletterPopup: p.newsletterPopup, featured: p.featured, categoryId: p.categoryId ?? '', authorId: p.authorId ?? '',
   bar: { ...EMPTY_BAR, ...(p.stickyBar ?? {}) } as Required<StickyBar>,
+  sections: p.sections ?? null,
 });
 
 const toPayload = (f: Form) => {
@@ -47,10 +52,11 @@ const toPayload = (f: Form) => {
     testedCount: n(f.testedCount), testWeeks: n(f.testWeeks), topPick: s(f.topPick),
     newsletterPopup: f.newsletterPopup, featured: f.featured, categoryId: s(f.categoryId), authorId: s(f.authorId),
     stickyBar: f.bar.name && f.bar.url ? f.bar : null,
+    sections: f.sections,
   };
 };
 
-type Tab = 'html' | 'css' | 'jsonld' | 'preview';
+type Tab = 'sections' | 'html' | 'css' | 'jsonld' | 'preview';
 
 export function PostEditor({ id }: { id?: string }) {
   const router = useRouter();
@@ -69,11 +75,24 @@ export function PostEditor({ id }: { id?: string }) {
   const [dirty, setDirty] = useState(false);
   const [picker, setPicker] = useState<null | 'insert' | 'cover' | 'bar'>(null);
   const views = useRef<Partial<Record<'html' | 'css', EditorView>>>({});
+  const [sectionTypes, setSectionTypes] = useState<SectionType[]>([]);
+  const [selected, setSelected] = useState<string | null>(null);
+  /** true once the editor touched the sections, so changing the post type no longer swaps the starter */
+  const [sectionsTouched, setSectionsTouched] = useState(false);
+  const [sectionsHtml, setSectionsHtml] = useState('');
+  const [previewError, setPreviewError] = useState('');
+  const frame = useRef<HTMLIFrameElement>(null);
+  const usesSections = form.sections !== null;
 
   useEffect(() => {
     adminApi<{ categories: Category[] }>('/categories').then((d) => setCats(d.categories));
     adminApi<{ authors: Author[] }>('/authors').then((d) => setAuthors(d.authors));
-    if (id) adminApi<{ post: Post }>(`/posts/${id}`).then((d) => { setForm(toForm(d.post)); setLoaded(true); }).catch((e) => setMsg({ ok: false, text: e.message }));
+    adminApi<{ types: SectionType[] }>('/section-types').then((d) => {
+      setSectionTypes(d.types);
+      // a new post starts from the section layout of its type
+      if (!id) { setForm((f) => (f.sections === null && f.html === starterHtml(f.type) ? { ...f, html: '', sections: starterDoc(f.type, d.types) } : f)); setTab('sections'); }
+    });
+    if (id) adminApi<{ post: Post }>(`/posts/${id}`).then((d) => { setForm(toForm(d.post)); if (d.post.sections) setTab('sections'); setLoaded(true); }).catch((e) => setMsg({ ok: false, text: e.message }));
   }, [id]);
 
   const set = <K extends keyof Form>(k: K, v: Form[K]) => { setForm((f) => ({ ...f, [k]: v })); setDirty(true); };
@@ -107,6 +126,12 @@ export function PostEditor({ id }: { id?: string }) {
 
   /** New posts only: swap in the starter layout for another type / product count. Asks first if the HTML was edited. */
   const changeStarter = async (type: PostType, n: 2 | 3 | 4) => {
+    if (form.sections) {
+      // sections mode: swap the starter sections until they were edited
+      if (sectionsTouched) set('type', type);
+      else { setForm((f) => ({ ...f, type, sections: starterDoc(type, sectionTypes) })); setSelected(null); setDirty(true); }
+      return;
+    }
     const untouched = !form.html.trim() || form.html === starterHtml(form.type, products);
     const next = starterHtml(type, n);
     if (!untouched && next !== form.html && !(await confirm({ title: 'Replace the HTML?', message: `Start from the ${typeLabel(type).toLowerCase()} layout${type === 'comparison' ? ` with ${n} products` : ''}. Your current HTML will be replaced.`, confirmLabel: 'Replace' }))) {
@@ -116,6 +141,20 @@ export function PostEditor({ id }: { id?: string }) {
     setProducts(n);
     setForm((f) => ({ ...f, type, html: next }));
     setDirty(true);
+  };
+
+  const setSections = (doc: SectionsDoc) => { set('sections', doc); setSectionsTouched(true); };
+
+  /** HTML post -> sections: the current HTML becomes one Custom HTML section, so the page looks exactly the same. */
+  const useSectionsMode = async () => {
+    if (!(await confirm({ title: 'Edit this post with sections?', message: 'The current HTML becomes one “Custom HTML” section, so the page looks the same. You can then add sections around it, or rebuild it section by section.', confirmLabel: 'Use sections' }))) return;
+    const items = form.html.trim() ? [{ id: newId(), type: 'custom-html', data: { html: form.html, tocTitle: '' } }] : [];
+    setForm((f) => ({ ...f, sections: { layout: form.html.trim() ? 'raw' : 'toc', items } })); setSelected(items[0]?.id ?? null); setTab('sections'); setDirty(true);
+  };
+  /** Sections -> hand-written HTML, starting from the HTML the sections produce now. */
+  const useHtmlMode = async () => {
+    if (!(await confirm({ title: 'Edit the HTML by hand?', message: 'The post stops using sections. You keep the HTML they produce now and edit it directly. Section forms will no longer update this post.', confirmLabel: 'Edit HTML' }))) return;
+    setForm((f) => ({ ...f, html: sectionsHtml || f.html, sections: null })); setTab('html'); setDirty(true);
   };
 
   const remove = async () => {
@@ -142,14 +181,40 @@ export function PostEditor({ id }: { id?: string }) {
   // Preview: same stylesheet as the live site, debounced so typing stays smooth.
   const [doc, setDoc] = useState('');
   useEffect(() => {
+    if (!form.sections) return;
     const t = setTimeout(() => {
+      const n = (v: string) => (v.trim() === '' ? null : Number(v));
+      adminApi<{ html: string }>('/posts/preview', { method: 'POST', json: {
+        sections: form.sections, type: form.type, slug: form.slug || 'preview', title: form.title, excerpt: form.excerpt, coverImage: form.coverImage || null,
+        testedCount: n(form.testedCount), testWeeks: n(form.testWeeks), topPick: form.topPick || null, categoryId: form.categoryId || null, authorId: form.authorId || null,
+      } }).then((r) => { setSectionsHtml(r.html); setPreviewError(''); }).catch((e) => setPreviewError(e.message));
+    }, 350);
+    return () => clearTimeout(t);
+  }, [form.sections, form.type, form.slug, form.title, form.excerpt, form.coverImage, form.testedCount, form.testWeeks, form.topPick, form.categoryId, form.authorId]);
+
+  const pageHtml = usesSections ? sectionsHtml : form.html;
+  /** Scroll position of the preview, kept when it reloads with new content */
+  const previewScroll = useRef(0);
+  useEffect(() => {
+    const t = setTimeout(() => {
+      previewScroll.current = frame.current?.contentWindow?.scrollY ?? previewScroll.current;
       const origin = window.location.origin;
       setDoc(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><base href="${origin}/" target="_blank">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="${origin}/brasq.css"><style>${form.css}</style></head><body>${form.html}</body></html>`);
+<link rel="stylesheet" href="${origin}/brasq.css"><link rel="stylesheet" href="${origin}/sections.css"><style>.bq-sec.is-selected{outline:2px dashed var(--orange);outline-offset:8px}${form.css}</style></head><body>${pageHtml}</body></html>`);
     }, 300);
     return () => clearTimeout(t);
-  }, [form.html, form.css]);
+  }, [pageHtml, form.css]);
+
+  /** Outline the selected section in the preview and scroll it into view. */
+  const markSelected = useCallback((scroll: boolean) => {
+    const d = frame.current?.contentDocument;
+    if (!d) return;
+    d.querySelectorAll('.bq-sec.is-selected').forEach((el) => el.classList.remove('is-selected'));
+    const el = selected ? d.querySelector(`[data-section="${CSS.escape(selected)}"]`) : null;
+    if (el) { el.classList.add('is-selected'); if (scroll) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); }
+  }, [selected]);
+  useEffect(() => { markSelected(true); }, [markSelected]);
 
   const extensions = useMemo(() => ({ html: [htmlLang()], css: [cssLang()], jsonld: [jsonLang()] }), []);
   const liveUrl = form.slug ? postUrl({ type: form.type, slug: form.slug }) + (form.status === 'draft' ? '?preview=1' : '') : null;
@@ -169,7 +234,7 @@ export function PostEditor({ id }: { id?: string }) {
   );
   const preview = (
     <div className={`ad-preview${mobile ? ' ad-preview--mobile' : ''}`}>
-      <iframe title="Preview" srcDoc={doc} sandbox="allow-same-origin allow-popups" />
+      <iframe ref={frame} title="Preview" srcDoc={doc} sandbox="allow-same-origin allow-popups" onLoad={() => { frame.current?.contentWindow?.scrollTo(0, previewScroll.current); markSelected(false); }} />
     </div>
   );
 
@@ -266,16 +331,24 @@ export function PostEditor({ id }: { id?: string }) {
 
         <div className="ad-editor__work">
           <div className="ad-tabs" role="tablist">
-            {([['html', 'HTML'], ['css', 'CSS'], ['jsonld', 'JSON-LD'], ...(split ? [] : [['preview', 'Preview']])] as [Tab, string][]).map(([k, l]) => (
+            {([...(usesSections ? [['sections', 'Sections']] : []), ['html', 'HTML'], ['css', 'CSS'], ['jsonld', 'JSON-LD'], ...(split ? [] : [['preview', 'Preview']])] as [Tab, string][]).map(([k, l]) => (
               <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>{l}</button>
             ))}
             <span className="ad-tabs__spacer" />
-            <button onClick={() => setPicker('insert')} title="Upload or pick an image and insert it at the cursor">+ Image</button>
+            {!usesSections && <button onClick={useSectionsMode} title="Build this post from sections">Use sections</button>}
+            {tab !== 'sections' && !(usesSections && tab === 'html') && <button onClick={() => setPicker('insert')} title="Upload or pick an image and insert it at the cursor">+ Image</button>}
             <button onClick={() => { setSplit(!split); if (tab === 'preview') setTab('html'); }}>{split ? 'Full-width editor' : 'Side-by-side preview'}</button>
             <button aria-selected={mobile} onClick={() => setMobile(!mobile)}>{mobile ? 'Mobile' : 'Desktop'} preview</button>
           </div>
           <div className={`ad-split${split ? ' ad-split--side' : ''}`}>
-            {tab === 'preview' ? preview : code(tab)}
+            {tab === 'preview' ? preview
+              : tab === 'sections' && form.sections ? <SectionsEditor doc={form.sections} onChange={setSections} selected={selected} onSelect={setSelected} types={sectionTypes} />
+                : tab === 'html' && usesSections ? (
+                  <div className="ad-code-wrap">
+                    <div className="se-htmlbar"><span className="ad-hint">This HTML is generated from the sections and updates when you save. {previewError && <span className="ad-error">{previewError}</span>}</span><button className="ad-btn ad-btn--sm" onClick={useHtmlMode}>Edit HTML by hand</button></div>
+                    <div className="ad-code"><CodeMirror value={sectionsHtml} extensions={extensions.html} readOnly editable={false} basicSetup={{ foldGutter: true }} /></div>
+                  </div>
+                ) : code(tab === 'sections' ? 'html' : tab)}
             {split && preview}
           </div>
           <p className="ad-hint">The HTML is the whole page body, rendered inside the site header and footer with <a href="/brasq.css" target="_blank">brasq.css</a>. Components are documented in CONTENT_GUIDE.md. Ctrl/⌘+S saves. <Link href="/admin/automation">Automation API</Link></p>

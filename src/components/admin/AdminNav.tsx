@@ -5,7 +5,7 @@ import { useEffect, useRef } from 'react';
 import { logout } from '@/app/admin/actions';
 
 const LINKS: [string, string][] = [
-  ['/admin', 'Posts & pages'], ['/admin/posts/new', 'New post'], ['/admin/media', 'Media'],
+  ['/admin', 'Posts & pages'], ['/admin/posts/new', 'New post'], ['/admin/front-page', 'Front page'], ['/admin/sections', 'Sections'], ['/admin/products', 'Products'], ['/admin/media', 'Media'],
   ['/admin/categories', 'Categories'], ['/admin/authors', 'Authors'], ['/admin/subscribers', 'Subscribers'], ['/admin/automation', 'Automation API'],
 ];
 

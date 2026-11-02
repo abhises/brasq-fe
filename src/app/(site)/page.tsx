@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { connection } from 'next/server';
 import { Avatar, GuideCard, Photo, TesterCard } from '@/components/site/Cards';
 import { NewsletterForm } from '@/components/site/NewsletterForm';
+import { PostEnhancer } from '@/components/site/PostEnhancer';
 import { getPublic } from '@/lib/api';
 import { longDate, postUrl, slugify } from '@/lib/format';
 import type { AuthorCard, Category, PostCard } from '@/lib/types';
@@ -11,8 +12,25 @@ const STEPS = [['01', 'We buy it ourselves', 'We buy most products in stores, ju
 
 type Home = { hero: PostCard | null; guides: PostCard[]; categories: Category[]; testers: AuthorCard[] };
 
-export default async function HomePage() {
+export default async function HomePage({ searchParams }: { searchParams: Promise<{ preview?: string }> }) {
   await connection();
+  // Built in Admin → Front page once it has been published; ?preview=1 shows the draft to a signed-in admin.
+  const preview = (await searchParams).preview === '1';
+  const built = await getPublic<{ html: string | null; preview: boolean }>(`/front-page${preview ? '?preview=1' : ''}`, { auth: preview });
+  if (built?.html) {
+    return (
+      <>
+        {built.preview && <div style={{ background: 'var(--red)', color: '#fff', textAlign: 'center', padding: 8, fontSize: 13, fontWeight: 700 }}>Front page draft preview, not visible to readers</div>}
+        <div id="front-page" className="bq-post bq-front" dangerouslySetInnerHTML={{ __html: built.html }} />
+        <PostEnhancer rootId="front-page" />
+      </>
+    );
+  }
+  return <HardcodedHome />;
+}
+
+/** The front page before it was built from sections. Shown until Admin → Front page is published. */
+async function HardcodedHome() {
   const { hero, guides, categories, testers } = (await getPublic<Home>('/home'))!;
   return (
     <div>
