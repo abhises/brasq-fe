@@ -57,6 +57,10 @@ export function SectionsEditor({ doc, onChange, selected, onSelect, types, scope
           {showLayout && <select aria-label="Page layout" value={doc.layout} onChange={(e) => onChange({ ...doc, layout: e.target.value as SectionsDoc['layout'] })}>
             {LAYOUTS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>}
+          {showLayout && doc.layout === 'toc' && <>
+            <input aria-label="Table of contents title" className="se-input" value={doc.tocTitle ?? ''} placeholder="On this page" onChange={(e) => onChange({ ...doc, tocTitle: e.target.value || undefined })} />
+            <label className="se-check"><input type="checkbox" checked={doc.backToTop !== false} onChange={(e) => onChange({ ...doc, backToTop: e.target.checked })} />Back to top link</label>
+          </>}
         </div>
         {items.length === 0 && <p className="ad-hint" style={{ padding: 10 }}>No sections yet. Add the first one below.</p>}
         {items.map((s, i) => {
@@ -91,6 +95,18 @@ export function SectionsEditor({ doc, onChange, selected, onSelect, types, scope
               </span>
             </div>
             {selType?.description && <p className="ad-hint" style={{ margin: '0 0 10px' }}>{selType.description}</p>}
+            {scope === 'post' && (
+              <details className="se-adv"><summary>Position and table of contents</summary>
+                <div className="ad-form" style={{ gap: 8, marginTop: 8 }}>
+                  <label>Position<select value={sel.placement ?? ''} onChange={(e) => update(sel.id, { placement: (e.target.value || undefined) as SectionItem['placement'] })}>
+                    <option value="">Default for this type{selType ? ` (${selType.placement === 'top' ? 'full width, top' : selType.placement === 'bottom' ? 'full width, bottom' : 'main column'})` : ''}</option>
+                    <option value="body">Main column</option><option value="top">Full width, top</option><option value="bottom">Full width, bottom</option>
+                  </select></label>
+                  <label>Name in the table of contents<input value={sel.tocLabel ?? ''} placeholder={sel.tocLabel === '' ? 'Not in the table of contents' : 'From the heading'} onChange={(e) => update(sel.id, { tocLabel: e.target.value === '' ? undefined : e.target.value })} />
+                    <span className="ad-hint"><label className="ad-check" style={{ display: 'inline-flex' }}><input type="checkbox" checked={sel.tocLabel === ''} onChange={(e) => update(sel.id, { tocLabel: e.target.checked ? '' : undefined })} />Leave out of the table of contents</label></span></label>
+                </div>
+              </details>
+            )}
             {selType ? <SectionForm fields={selType.fields} value={sel.data ?? {}} onChange={(data) => update(sel.id, { data })} />
               : <p className="ad-error">This section type no longer exists. Remove the section or recreate the type “{sel.type}”.</p>}
           </>

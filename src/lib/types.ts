@@ -39,8 +39,8 @@ export interface SectionType {
   sample: Record<string, unknown>; tocLabel: string; placement: 'top' | 'body' | 'bottom'; scope: 'any' | 'post' | 'home';
   builtIn: boolean; version: number; updatedAt: string; uses?: number; previewHtml?: string;
 }
-export interface SectionItem { id: string; type: string; data: Record<string, unknown>; hidden?: boolean }
-export interface SectionsDoc { layout: 'toc' | 'wide' | 'raw'; items: SectionItem[] }
+export interface SectionItem { id: string; type: string; data: Record<string, unknown>; hidden?: boolean; placement?: 'top' | 'body' | 'bottom'; tocLabel?: string }
+export interface SectionsDoc { layout: 'toc' | 'wide' | 'raw'; className?: string; tocTitle?: string; backToTop?: boolean; items: SectionItem[] }
 export interface Product {
   id: string; slug: string; name: string; score: number | null; price: number | null; image: string | null;
   shops: { name: string; url: string }[]; reviewSlug: string | null; summary: string; updatedAt: string;

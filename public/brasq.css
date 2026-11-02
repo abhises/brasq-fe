@@ -843,7 +843,7 @@ summary::-webkit-details-marker { display: none; }
 .bq-sections .bq-toc a.is-active { border-left-color: var(--orange); color: var(--ink); font-weight: 800; }
 .bq-sections > .bq-sec--post-header { margin-bottom: 44px; }
 .bq-sections .bq-sec--post-header .bq-guide-top { margin-bottom: 0; }
-.bq-content--wide { max-width: none; margin: 0 auto; }
+.bq-content--wide { max-width: none; width: 100%; margin: 0; }
 .bq-sec { min-width: 0; scroll-margin-top: 16px; }
 .bq-rich { font-size: 17px; line-height: 1.7; color: var(--body); text-wrap: pretty; }
 .bq-rich > * + * { margin-top: 14px; }
@@ -861,3 +861,10 @@ summary::-webkit-details-marker { display: none; }
 .bq-pick__media { flex-basis: 260px; min-height: 240px; }
 .bq-pick .bq-shops { margin-top: auto; }
 .bq-pick .bq-shop { width: min(100%, 420px); font-size: 17px; padding: 11px 22px; }
+/* converted comparison pages keep the comparison spacing */
+.bq-compare.bq-sections > .bq-sec--post-header { margin-bottom: 0; }
+.bq-compare > .bq-content--wide { display: flex; flex-direction: column; gap: 52px; }
+.bq-pick__text.bq-rich { font-size: 15px; line-height: 1.55; }
+/* update history + sources in one section keep the gap they had as separate blocks */
+.bq-sec--sources > .bq-history + .bq-history { margin-top: 44px; }
+.bq-infopost .bq-sec--sources > .bq-history + .bq-history { margin-top: 56px; }

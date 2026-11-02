@@ -273,3 +273,7 @@ button.sf-ref__row:hover { background: var(--yellow-soft); }
 .fp-preview { position: sticky; top: 16px; height: calc(100vh - 140px); }
 .fp-preview iframe { width: 100%; height: 100%; }
 @media (max-width: 1100px) { .fp-editor { grid-template-columns: 1fr; } .fp-preview { position: static; height: 80vh; } }
+.se-input { border: 1px solid #c9c9c2; padding: 4px 6px; font: 12px var(--sans); text-transform: none; letter-spacing: 0; font-weight: 500; }
+.se-check { display: flex; gap: 6px; align-items: center; font-size: 12px; font-weight: 600; text-transform: none; letter-spacing: 0; }
+.se-adv { border: 1px solid var(--line); padding: 6px 10px; margin-bottom: 12px; font-size: 13px; }
+.se-adv summary { cursor: pointer; font-weight: 700; }
