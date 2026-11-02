@@ -8,10 +8,11 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { adminApi } from '@/lib/admin-client';
-import { postUrl } from '@/lib/format';
+import { postUrl, typeLabel } from '@/lib/format';
 import type { Author, Category, Media, Post, PostStatus, PostType, StickyBar } from '@/lib/types';
 import { useConfirm } from './ConfirmDialog';
 import { MediaPicker } from './MediaPicker';
+import { starterHtml } from './starters';
 
 type Form = {
   type: PostType; status: PostStatus; slug: string; title: string; excerpt: string; html: string; css: string;
@@ -26,24 +27,8 @@ const EMPTY: Form = {
   testedCount: '', testWeeks: '', topPick: '', newsletterPopup: false, featured: false, categoryId: '', authorId: '', bar: EMPTY_BAR,
 };
 
-const STARTER_HTML = `<article class="bq-article">
-<nav class="bq-crumbs"><a href="/">Home</a><span>New guide</span></nav>
-<div class="bq-guide-top">
-  <header class="bq-guide-head">
-    <span class="bq-tag">Buying guide</span>
-    <h1 class="bq-h1">The best … of 2026</h1>
-    <p class="bq-lead">One-paragraph summary of the verdict.</p>
-    <p class="bq-disclosure">We choose products independently. We may earn a commission through links on this page; your price stays the same. <a href="/how-we-make-money">Affiliate policy</a></p>
-  </header>
-  <div class="bq-photo bq-guide-hero"><!-- <img src="…" alt="…"> --></div>
-</div>
-<div class="bq-content" style="margin:0 auto">
-  <section id="picks" class="bq-section">
-    <h2 class="bq-h2">Our picks at a glance</h2>
-    <!-- copy a .bq-pick block from CONTENT_GUIDE.md -->
-  </section>
-</div>
-</article>`;
+/** Post types in the order the type picker shows them. */
+const TYPES: PostType[] = ['guide', 'review', 'comparison', 'informational', 'page'];
 
 const toForm = (p: Post): Form => ({
   type: p.type, status: p.status, slug: p.slug, title: p.title, excerpt: p.excerpt, html: p.html, css: p.css,
@@ -70,7 +55,9 @@ type Tab = 'html' | 'css' | 'jsonld' | 'preview';
 export function PostEditor({ id }: { id?: string }) {
   const router = useRouter();
   const confirm = useConfirm();
-  const [form, setForm] = useState<Form>(id ? EMPTY : { ...EMPTY, html: STARTER_HTML });
+  const [form, setForm] = useState<Form>(id ? EMPTY : { ...EMPTY, html: starterHtml('guide') });
+  /** Number of products for a new comparison's starter layout */
+  const [products, setProducts] = useState<2 | 3 | 4>(2);
   const [loaded, setLoaded] = useState(!id);
   const [cats, setCats] = useState<Category[]>([]);
   const [authors, setAuthors] = useState<Author[]>([]);
@@ -117,6 +104,19 @@ export function PostEditor({ id }: { id?: string }) {
     window.addEventListener('beforeunload', onLeave);
     return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('beforeunload', onLeave); };
   }, [save, dirty]);
+
+  /** New posts only: swap in the starter layout for another type / product count. Asks first if the HTML was edited. */
+  const changeStarter = async (type: PostType, n: 2 | 3 | 4) => {
+    const untouched = !form.html.trim() || form.html === starterHtml(form.type, products);
+    const next = starterHtml(type, n);
+    if (!untouched && next !== form.html && !(await confirm({ title: 'Replace the HTML?', message: `Start from the ${typeLabel(type).toLowerCase()} layout${type === 'comparison' ? ` with ${n} products` : ''}. Your current HTML will be replaced.`, confirmLabel: 'Replace' }))) {
+      set('type', type);
+      return;
+    }
+    setProducts(n);
+    setForm((f) => ({ ...f, type, html: next }));
+    setDirty(true);
+  };
 
   const remove = async () => {
     if (!id || !(await confirm({ title: `Delete "${form.title}"?`, message: 'This cannot be undone.' }))) return;
@@ -193,8 +193,8 @@ export function PostEditor({ id }: { id?: string }) {
           <label>Title<input value={form.title} onChange={(e) => set('title', e.target.value)} /></label>
           <div className="ad-2">
             <label>Type
-              <select value={form.type} onChange={(e) => set('type', e.target.value as PostType)}>
-                <option value="guide">Buying guide</option><option value="review">Review</option><option value="page">Page</option>
+              <select value={form.type} onChange={(e) => (id ? set('type', e.target.value as PostType) : changeStarter(e.target.value as PostType, products))}>
+                {TYPES.map((t) => <option key={t} value={t}>{typeLabel(t)}</option>)}
               </select>
             </label>
             <label>Status
@@ -203,6 +203,14 @@ export function PostEditor({ id }: { id?: string }) {
               </select>
             </label>
           </div>
+          {!id && form.type === 'comparison' && (
+            <label>Products compared
+              <select value={products} onChange={(e) => changeStarter('comparison', Number(e.target.value) as 2 | 3 | 4)}>
+                <option value={2}>2 products (X vs Y)</option><option value={3}>3 products</option><option value={4}>4 products</option>
+              </select>
+              <span className="ad-hint">Sets up the lineup, head-to-head table and “which to buy” blocks for this many products.</span>
+            </label>
+          )}
           <label>Slug<input value={form.slug} placeholder="from title" onChange={(e) => set('slug', e.target.value)} />
             <span className="ad-hint">{postUrl({ type: form.type, slug: form.slug || '…' })}</span></label>
           <label>Excerpt<textarea style={{ fontFamily: 'var(--sans)', fontSize: 13, minHeight: 70 }} value={form.excerpt} onChange={(e) => set('excerpt', e.target.value)} />

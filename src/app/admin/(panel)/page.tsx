@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Pagination, usePaging, type Paged } from '@/components/admin/Pagination';
 import { adminApi } from '@/lib/admin-client';
-import { postUrl } from '@/lib/format';
+import { postUrl, TYPE_LABEL, typeLabel } from '@/lib/format';
 import type { PostCard, PostStatus } from '@/lib/types';
 
 type Row = PostCard & { status: PostStatus; featured: boolean };
@@ -39,7 +39,7 @@ export default function PostsPage() {
       <div className="ad-filters">
         <input placeholder="Search title or slug" value={q} onChange={filter(setQ)} />
         <select value={type} onChange={filter(setType)}>
-          <option value="">All types</option><option value="guide">Buying guides</option><option value="review">Reviews</option><option value="page">Pages</option>
+          <option value="">All types</option>{Object.entries(TYPE_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
         </select>
         <select value={status} onChange={filter(setStatus)}>
           <option value="">Any status</option><option value="published">Published</option><option value="draft">Draft</option>
@@ -53,7 +53,7 @@ export default function PostsPage() {
             {posts.map((p) => (
               <tr key={p.id}>
                 <td className="ad-cell-main"><Link href={`/admin/posts/${p.id}`}>{p.title}</Link>{p.featured && <span className="ad-pill" style={{ marginLeft: 6 }}>Home hero</span>}<div className="ad-hint">{postUrl(p)}</div></td>
-                <td>{p.type}</td>
+                <td>{typeLabel(p.type)}</td>
                 <td><span className={`ad-pill ad-pill--${p.status}`}>{p.status}</span></td>
                 <td>{p.category?.name ?? '—'}</td>
                 <td>{p.author?.name ?? '—'}</td>

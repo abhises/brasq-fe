@@ -1,4 +1,4 @@
-export type PostType = 'guide' | 'review' | 'page';
+export type PostType = 'guide' | 'review' | 'comparison' | 'informational' | 'page';
 export type PostStatus = 'draft' | 'published';
 
 export interface CategoryRef { slug: string; name: string }

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { longDate, postUrl } from '@/lib/format';
+import { longDate, postUrl, typeLabel } from '@/lib/format';
 import type { AuthorCard, PostCard } from '@/lib/types';
 
 export function Photo({ src, alt = '', className = '', style, children }: { src?: string | null; alt?: string; className?: string; style?: React.CSSProperties; children?: React.ReactNode }) {
@@ -34,6 +34,18 @@ export function GuideListCard({ post }: { post: PostCard }) {
         <span style={{ fontSize: 13, color: 'var(--muted)' }}>{post.author ? `By ${post.author.name} · ` : ''}updated {longDate(post.updatedAt)}</span>
         {post.topPick && <span style={{ fontSize: 14, fontWeight: 700 }}>Our pick:&nbsp;{post.topPick}</span>}
       </div>
+    </Link>
+  );
+}
+
+/** Compact text card for comparisons and explainers on category pages. */
+export function PostTile({ post }: { post: PostCard }) {
+  const eyebrow = post.type === 'comparison' && post.testedCount ? `Comparison · ${post.testedCount} products` : typeLabel(post.type);
+  return (
+    <Link href={postUrl(post)} className={`bq-tile bq-tile--${post.type}`}>
+      <span className="bq-eyebrow">{eyebrow}</span>
+      <strong>{post.title}</strong>
+      <span>{post.excerpt}</span>
     </Link>
   );
 }

@@ -2,11 +2,11 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { connection } from 'next/server';
-import { Avatar, GuideListCard } from '@/components/site/Cards';
+import { Avatar, GuideListCard, PostTile } from '@/components/site/Cards';
 import { getPublic } from '@/lib/api';
 import type { AuthorCard, Category, PostCard } from '@/lib/types';
 
-type Data = { category: Category; guides: PostCard[]; authors: AuthorCard[]; others: { slug: string; name: string }[] };
+type Data = { category: Category; guides: PostCard[]; comparisons?: PostCard[]; explainers?: PostCard[]; authors: AuthorCard[]; others: { slug: string; name: string }[] };
 type Props = { params: Promise<{ slug: string }> };
 
 async function load(props: Props) {
@@ -33,6 +33,18 @@ export default async function CategoryPage(props: Props) {
         <h2 className="bq-h2 bq-h2--rule" style={{ fontSize: 26 }}>Buying guides</h2>
         {d.guides.length ? d.guides.map((g) => <GuideListCard key={g.id} post={g} />) : <p className="bq-small">No buying guides in this category yet.</p>}
       </div>
+      {!!d.comparisons?.length && (
+        <div className="bq-stack" style={{ gap: 16 }}>
+          <h2 className="bq-h2 bq-h2--rule" style={{ fontSize: 26 }}>Comparisons</h2>
+          <div className="bq-tiles">{d.comparisons.map((p) => <PostTile key={p.id} post={p} />)}</div>
+        </div>
+      )}
+      {!!d.explainers?.length && (
+        <div className="bq-stack" style={{ gap: 16 }}>
+          <h2 className="bq-h2 bq-h2--rule" style={{ fontSize: 26 }}>Explained</h2>
+          <div className="bq-tiles">{d.explainers.map((p) => <PostTile key={p.id} post={p} />)}</div>
+        </div>
+      )}
       {d.authors.length > 0 && (
         <div className="bq-stack">
           <h2 className="bq-h2 bq-h2--sm">Tested by</h2>

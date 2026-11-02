@@ -14,7 +14,7 @@ of 2026*), copy its HTML and replace the content.
   `<div class="bq-photo bq-photo--43">…</div>` (`--32`, `--169`, `--1` for other aspect ratios).
 - **Anchors:** give each section an `id` so the table of contents can link to it (`<a href="#g-picks">`).
 - **No `<script>` tags.** Interactivity comes from the data attributes below.
-- Internal links: `/guide/<slug>`, `/review/<slug>`, `/category/<slug>`, `/author/<slug>`, pages at `/<slug>`.
+- Internal links: `/guide/<slug>`, `/review/<slug>`, `/compare/<slug>`, `/explained/<slug>`, `/category/<slug>`, `/author/<slug>`, pages at `/<slug>`.
 - Fill in the admin fields as well: title, excerpt, category, author, cover image, models tested and top pick feed the
   home page, category pages, search and SEO tags. JSON-LD goes in its own tab.
 
@@ -191,3 +191,78 @@ The **sticky "our pick" bar** and the **newsletter popup** are switched on with 
 with `.bq-bigscore` and `.bq-subscore`, `.bq-pricehist`, `.bq-review-meta`, `.bq-quote` (verdict), `.bq-pc2` (pros/cons),
 `.bq-fit` (good for / less suited), `.bq-result` (bar vs average), `.bq-timeline`, `.bq-specs`, `.bq-qa`, `.bq-helpful`,
 `.bq-person`, and `.bq-mobile-buy` (fixed buy bar on phones; add `bq-has-mobile-buy` to the article).
+
+## Comparison posts (type `comparison`, URL `/compare/<slug>`)
+
+Two to four products side by side ("Product X vs Product Y"). In **Admin → New post** choose *Comparison* and the number of
+products; the editor fills in the layout below. Set **Models tested** to the number of products (shown on category cards)
+and **Top pick** to the winner. Order of sections: header, lineup, short answer, how we compared, head to head, which to
+buy, verdict, FAQ.
+
+```html
+<article class="bq-article bq-compare">
+  <!-- header: same .bq-guide-top as a guide, with <span class="bq-tag">Comparison · 2&nbsp;products</span> -->
+  <section id="c-lineup" class="bq-section">
+    <div class="bq-lineup-head"><h2 class="bq-h2">The two robots</h2><span class="bq-note">Prices checked …</span></div>
+    <div class="bq-lineup bq-lineup--2">          <!-- --2, --3 or --4 -->
+      <div class="bq-prod">
+        <div class="bq-prod__tag bq-prod__tag--hl">Our pick</div>   <!-- --hl only on the first product -->
+        <a class="bq-photo bq-photo--1" href="/review/x"><img src="…" alt="…"></a>
+        <div class="bq-prod__body">
+          <a class="bq-prod__name" href="/review/x">Product X</a>
+          <div class="bq-prod__score"><span class="bq-score">Test score <strong>8.9</strong></span><span>Best in 5 of 9 tests</span></div>
+          <p class="bq-prod__text">One line.</p>
+          <a class="bq-btn bq-btn--black" href="AFFILIATE_URL" rel="sponsored nofollow" target="_blank">$499 at Amazon</a>
+          <a class="bq-link-strong" href="/review/x">Read the full review</a>
+        </div>
+      </div>
+      <!-- … more .bq-prod … -->
+      <div class="bq-vs" aria-hidden="true">vs</div>   <!-- two products only -->
+    </div>
+  </section>
+  <div class="bq-compare__body"> <!-- 820px text column: .bq-summary, "How we compared them" --> </div>
+  <section id="c-h2h" class="bq-section">
+    <div class="bq-compare__body"><h2 class="bq-h2">Head to head</h2><p class="bq-p">…</p></div>
+    <div class="bq-table-wrap"><table class="bq-h2h">
+      <thead><tr><th>Test</th><th><a href="/review/x">Product X</a></th><th><a href="/review/y">Product Y</a></th></tr></thead>
+      <tbody>
+        <tr><th>Pet hair<span>% collected</span></th><td class="bq-win">94% <span class="bq-win__mark">✓ Best</span></td><td>92%</td></tr>
+        <tr class="bq-h2h__tally"><th>Rows won</th><td>5</td><td>4</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+  <div class="bq-compare__body">
+    <section id="c-which" class="bq-section"><h2 class="bq-h2">Which one should you buy?</h2>
+      <div class="bq-which">
+        <div class="bq-which__head"><a class="bq-prod__name" href="/review/x">Product X</a><span class="bq-tag bq-tag--sm">Our pick</span></div>
+        <div class="bq-buyskip">
+          <div class="bq-buyskip__yes"><strong>Buy it if</strong><ul><li>…</li></ul></div>
+          <div class="bq-buyskip__no"><strong>Skip it if</strong><ul><li>…</li></ul></div>
+        </div>
+        <a class="bq-btn bq-btn--black" href="AFFILIATE_URL" rel="sponsored nofollow" target="_blank">$499 at Amazon</a>
+      </div>
+    </section>
+    <section id="c-verdict" class="bq-verdict bq-verdict--dark"><span class="bq-eyebrow">Our verdict</span><p>…</p>
+      <div class="bq-verdict__actions"><a class="bq-btn bq-btn--buy" href="AFFILIATE_URL" rel="sponsored nofollow" target="_blank">Product X: $499 at Amazon</a><a href="/guide/x">See all … we tested</a></div>
+    </section>
+    <!-- .bq-faq, .bq-sources, .bq-authorbox as in a guide -->
+  </div>
+</article>
+```
+
+## Informational posts (type `informational`, URL `/explained/<slug>`)
+
+Explainers and how-tos that don't rank products. Same header and table-of-contents layout as a guide (use
+`<span class="bq-tag bq-tag--dark">Explained</span>`), with key takeaways in a `.bq-summary`, then normal `.bq-section`s
+using `.bq-p`, `.bq-numbered`, `.bq-table`, `.bq-grid` cards and these extras:
+
+```html
+<aside class="bq-callout"><span class="bq-eyebrow">From our tests</span><strong>Headline finding</strong><p>…</p></aside>
+
+<div class="bq-myths"><div class="bq-myth"><span class="bq-myth__k">Myth</span><strong>The claim.</strong>
+  <span class="bq-myth__k bq-myth__k--ok">What we found</span><p>…</p></div></div>
+
+<section id="i-next" class="bq-next"><span class="bq-eyebrow">Ready to choose one?</span><p>…</p>
+  <div class="bq-next__links"><a href="/guide/x"><span class="bq-eyebrow">Buying guide</span><strong>Title</strong><span>One line.</span></a></div>
+</section>
+```

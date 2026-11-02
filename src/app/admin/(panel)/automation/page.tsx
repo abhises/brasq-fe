@@ -25,7 +25,7 @@ curl -X POST ${BE}/api/admin/media/import -H "Authorization: Bearer $API_TOKEN" 
       <div className="ad-card">
         <h3 style={{ marginTop: 0 }}>Create or update a post (idempotent, by type + slug)</h3>
         <pre className="ad-pre">{ex1}</pre>
-        <p className="ad-hint">Any field can be omitted on update. <code>type</code> is guide, review or page. Set <code>&quot;status&quot;: &quot;published&quot;</code> to go live.</p>
+        <p className="ad-hint">Any field can be omitted on update. <code>type</code> is guide, review, comparison, informational or page. Set <code>&quot;status&quot;: &quot;published&quot;</code> to go live.</p>
       </div>
       <div className="ad-card">
         <h3 style={{ marginTop: 0 }}>Upload images</h3>

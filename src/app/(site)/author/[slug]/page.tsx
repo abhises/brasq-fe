@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { connection } from 'next/server';
 import { Photo } from '@/components/site/Cards';
 import { getPublic } from '@/lib/api';
-import { longDate, postUrl } from '@/lib/format';
+import { longDate, postUrl, typeLabel } from '@/lib/format';
 import type { Author, PostCard } from '@/lib/types';
 
 type Props = { params: Promise<{ slug: string }> };
@@ -79,7 +79,7 @@ export default async function AuthorPage(props: Props) {
             <Link key={p.id} href={postUrl(p)} className="bq-article-row">
               <Photo src={p.coverImage} className="bq-photo--32" />
               <div>
-                <span className="bq-eyebrow">{p.type === 'guide' ? 'Buying guide' : 'Review'}</span>
+                <span className="bq-eyebrow">{typeLabel(p.type)}</span>
                 <strong>{p.title}</strong>
                 <span>Updated {longDate(p.updatedAt)}</span>
               </div>
