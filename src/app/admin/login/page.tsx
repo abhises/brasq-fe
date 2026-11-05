@@ -8,6 +8,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <span style={{ fontWeight: 900, fontSize: 30, letterSpacing: '-0.04em' }}>Bras<span style={{ color: 'var(--orange-mid)' }}>Q</span> admin</span>
         <LoginForm next={next ?? '/admin'} />
       </div>
+      <a href="/" className="ad-login__back">← Back to BrasQ</a>
     </div>
   );
 }

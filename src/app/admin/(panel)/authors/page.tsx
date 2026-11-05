@@ -4,16 +4,17 @@ import { adminApi } from '@/lib/admin-client';
 import type { Author } from '@/lib/types';
 import { useConfirm } from '@/components/admin/ConfirmDialog';
 import { Pagination, usePaging, type Paged } from '@/components/admin/Pagination';
+import { MediaPicker } from '@/components/admin/MediaPicker';
 
 type Row = Author & { _count: { posts: number } };
-type Edit = { id: string; name: string; slug: string; role: string; short: string; bio: string; email: string; avatarUrl: string; facts: string; expertise: string; career: string; sortOrder: number; showOnHome: boolean };
+type Edit = { id: string; name: string; slug: string; role: string; short: string; bio: string; email: string; avatarUrl: string; linkedinUrl: string; youtubeUrl: string; facts: string; expertise: string; career: string; sortOrder: number; showOnHome: boolean };
 
-const blank: Edit = { id: '', name: '', slug: '', role: '', short: '', bio: '', email: '', avatarUrl: '', facts: '', expertise: '', career: '', sortOrder: 0, showOnHome: true };
+const blank: Edit = { id: '', name: '', slug: '', role: '', short: '', bio: '', email: '', avatarUrl: '', linkedinUrl: '', youtubeUrl: '', facts: '', expertise: '', career: '', sortOrder: 0, showOnHome: true };
 const lines = (s: string) => s.split('\n').map((l) => l.trim()).filter(Boolean);
 const pairs = (s: string) => lines(s).map((l) => { const i = l.indexOf('|'); return i < 0 ? [l, ''] : [l.slice(0, i).trim(), l.slice(i + 1).trim()]; });
 
 const toEdit = (a: Author): Edit => ({
-  id: a.id, name: a.name, slug: a.slug, role: a.role, short: a.short, bio: a.bio, email: a.email ?? '', avatarUrl: a.avatarUrl ?? '',
+  id: a.id, name: a.name, slug: a.slug, role: a.role, short: a.short, bio: a.bio, email: a.email ?? '', avatarUrl: a.avatarUrl ?? '', linkedinUrl: a.linkedinUrl ?? '', youtubeUrl: a.youtubeUrl ?? '',
   facts: a.facts.map((f) => `${f.value} | ${f.label}`).join('\n'), expertise: a.expertise.join('\n'),
   career: a.career.map((c) => `${c.years} | ${c.text}`).join('\n'), sortOrder: a.sortOrder, showOnHome: a.showOnHome,
 });
@@ -23,6 +24,7 @@ export default function AuthorsPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [edit, setEdit] = useState<Edit | null>(null);
   const [error, setError] = useState('');
+  const [picking, setPicking] = useState(false);
   const { page, pageSize, setPage, setPageSize } = usePaging();
   const [meta, setMeta] = useState<Paged | null>(null);
   const load = useCallback(() => adminApi<{ authors: Row[] } & Paged>(`/authors?page=${page}&pageSize=${pageSize}`).then((d) => { setRows(d.authors); setMeta(d); }), [page, pageSize]);
@@ -32,9 +34,10 @@ export default function AuthorsPage() {
     e.preventDefault();
     if (!edit) return;
     setError('');
-    const { id, facts, expertise, career, email, avatarUrl, ...rest } = edit;
+    const { id, facts, expertise, career, email, avatarUrl, linkedinUrl, youtubeUrl, ...rest } = edit;
     const body = {
-      ...rest, email: email || null, avatarUrl: avatarUrl || null, sortOrder: Number(rest.sortOrder),
+      ...rest, email: email || null, avatarUrl: avatarUrl || null,
+      linkedinUrl: linkedinUrl.trim() || null, youtubeUrl: youtubeUrl.trim() || null, sortOrder: Number(rest.sortOrder),
       facts: pairs(facts).map(([value, label]) => ({ value, label })), expertise: lines(expertise),
       career: pairs(career).map(([years, text]) => ({ years, text })),
     };
@@ -56,7 +59,21 @@ export default function AuthorsPage() {
         <form className="ad-card ad-form" style={{ marginBottom: 16, maxWidth: 760 }} onSubmit={save}>
           <div className="ad-2"><label>Name<input required {...f('name')} /></label><label>Slug<input placeholder="from name" {...f('slug')} /></label></div>
           <div className="ad-2"><label>Role<input {...f('role')} /></label><label>Email<input type="email" {...f('email')} /></label></div>
-          <label>Avatar URL<input {...f('avatarUrl')} /><span className="ad-hint">Upload in Media, then paste the URL.</span></label>
+          <div className="ad-avatar-field">
+            {edit.avatarUrl ? <img src={edit.avatarUrl} alt="" className="ad-avatar-field__img" /> : <span className="ad-avatar-field__img" aria-hidden="true" />}
+            <label>Avatar
+              <span className="ad-avatar-field__row">
+                <input placeholder="https://…" {...f('avatarUrl')} />
+                <button type="button" className="ad-btn" onClick={() => setPicking(true)}>Choose from Media</button>
+                {edit.avatarUrl && <button type="button" className="ad-btn ad-btn--danger" onClick={() => setEdit({ ...edit, avatarUrl: '' })}>Remove</button>}
+              </span>
+              <span className="ad-hint">Pick or upload a photo in the media library, or paste an image URL. Square photos look best.</span>
+            </label>
+          </div>
+          <div className="ad-2">
+            <label>LinkedIn profile<input type="url" placeholder="https://www.linkedin.com/in/…" {...f('linkedinUrl')} /></label>
+            <label>YouTube channel<input type="url" placeholder="https://www.youtube.com/@…" {...f('youtubeUrl')} /></label>
+          </div>
           <label>Short bio (cards)<input {...f('short')} /></label>
           <label>Bio<textarea style={{ fontFamily: 'var(--sans)' }} {...f('bio')} /></label>
           <label>Facts<textarea placeholder={'9 years | experience as a product tester'} {...f('facts')} /><span className="ad-hint">One per line: value | label</span></label>
@@ -70,6 +87,7 @@ export default function AuthorsPage() {
           <div className="ad-savebar"><button className="ad-btn ad-btn--primary">Save</button><button type="button" className="ad-btn" onClick={() => setEdit(null)}>Cancel</button></div>
         </form>
       )}
+      {picking && edit && <MediaPicker onClose={() => setPicking(false)} onPick={(m) => { setEdit({ ...edit, avatarUrl: m.url }); setPicking(false); }} />}
       <table className="ad-table">
         <thead><tr><th></th><th>Name</th><th>Role</th><th>Posts</th><th></th></tr></thead>
         <tbody>{rows.map((a) => (

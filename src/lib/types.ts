@@ -6,7 +6,7 @@ export interface Category extends CategoryRef { id: string; intro: string; sortO
 
 export interface AuthorCard { slug: string; name: string; role: string; short?: string; avatarUrl: string | null }
 export interface Author extends AuthorCard {
-  id: string; short: string; bio: string; email: string | null;
+  id: string; short: string; bio: string; email: string | null; linkedinUrl: string | null; youtubeUrl: string | null;
   facts: { value: string; label: string }[]; expertise: string[]; career: { years: string; text: string }[];
   sortOrder: number; showOnHome: boolean;
 }

@@ -160,7 +160,7 @@ export function PostEditor({ id }: { id?: string }) {
   const remove = async () => {
     if (!id || !(await confirm({ title: `Delete "${form.title}"?`, message: 'This cannot be undone.' }))) return;
     await adminApi(`/posts/${id}`, { method: 'DELETE' });
-    router.push('/admin');
+    router.push('/admin/posts');
   };
 
   const onPicked = (m: Media) => {

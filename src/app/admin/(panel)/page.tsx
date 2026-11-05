@@ -1,71 +1,105 @@
 'use client';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { Pagination, usePaging, type Paged } from '@/components/admin/Pagination';
 import { adminApi } from '@/lib/admin-client';
-import { ADMIN_TYPE_LABEL as TYPE_LABEL, adminTypeLabel as typeLabel, postUrl } from '@/lib/format';
-import type { PostCard, PostStatus } from '@/lib/types';
+import { adminTypeLabel } from '@/lib/format';
 
-type Row = PostCard & { status: PostStatus; featured: boolean };
+type Stats = {
+  counts: Record<'guide' | 'review' | 'comparison' | 'informational' | 'page' | 'drafts' | 'media' | 'categories' | 'authors' | 'subscribers', number | undefined>;
+  recentPosts: { id: string; title: string; type: string; status: string; updatedAt: string }[];
+  recentSubscribers: { id: string; email: string; source: string | null; createdAt: string }[];
+  storage: 'local' | 's3';
+};
 
-export default function PostsPage() {
-  const [posts, setPosts] = useState<Row[] | null>(null);
-  const [type, setType] = useState('');
-  const [status, setStatus] = useState('');
-  const [q, setQ] = useState('');
+const GLANCE: [keyof Stats['counts'], string, string][] = [
+  ['guide', 'Buying guides', '/admin/posts'],
+  ['review', 'Reviews', '/admin/posts'],
+  ['comparison', 'Comparisons', '/admin/posts'],
+  ['informational', 'Info posts', '/admin/posts'],
+  ['page', 'Pages', '/admin/posts'],
+  ['drafts', 'Drafts', '/admin/posts'],
+  ['media', 'Media files', '/admin/media'],
+  ['categories', 'Categories', '/admin/categories'],
+  ['authors', 'Authors', '/admin/authors'],
+  ['subscribers', 'Subscribers', '/admin/subscribers'],
+];
+
+const when = (d: string) =>
+  new Date(d).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+export default function DashboardPage() {
+  const [stats, setStats] = useState<Stats | null>(null);
   const [error, setError] = useState('');
-  const { page, pageSize, setPage, setPageSize } = usePaging();
-  const [meta, setMeta] = useState<Paged | null>(null);
-  // a new filter starts again at page 1
-  const filter = (fn: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => { fn(e.target.value); if (page > 1) setPage(1); };
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      const sp = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
-      if (type) sp.set('type', type);
-      if (status) sp.set('status', status);
-      if (q) sp.set('q', q);
-      adminApi<{ posts: Row[] } & Paged>(`/posts?${sp}`).then((d) => { setPosts(d.posts); setMeta(d); }).catch((e) => setError(e.message));
-    }, 200);
-    return () => clearTimeout(t);
-  }, [type, status, q, page, pageSize]);
+    adminApi<Stats>('/stats').then(setStats).catch((e) => setError(e.message));
+  }, []);
 
   return (
     <>
       <div className="ad-head">
-        <h1>Posts &amp; pages</h1>
-        <Link href="/admin/posts/new" className="ad-btn ad-btn--primary">+ New post</Link>
-      </div>
-      <div className="ad-filters">
-        <input placeholder="Search title or slug" value={q} onChange={filter(setQ)} />
-        <select value={type} onChange={filter(setType)}>
-          <option value="">All types</option>{Object.entries(TYPE_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-        </select>
-        <select value={status} onChange={filter(setStatus)}>
-          <option value="">Any status</option><option value="published">Published</option><option value="draft">Draft</option>
-        </select>
+        <h1>Dashboard</h1>
       </div>
       {error && <p className="ad-error">{error}</p>}
-      {!posts ? <p>Loading…</p> : (
-        <table className="ad-table">
-          <thead><tr><th>Title</th><th>Type</th><th>Status</th><th>Category</th><th>Author</th><th>Updated</th><th></th></tr></thead>
-          <tbody>
-            {posts.map((p) => (
-              <tr key={p.id}>
-                <td className="ad-cell-main"><Link href={`/admin/posts/${p.id}`}>{p.title}</Link>{p.featured && <span className="ad-pill" style={{ marginLeft: 6 }}>Home hero</span>}<div className="ad-hint">{postUrl(p)}</div></td>
-                <td>{typeLabel(p.type)}</td>
-                <td><span className={`ad-pill ad-pill--${p.status}`}>{p.status}</span></td>
-                <td>{p.category?.name ?? '—'}</td>
-                <td>{p.author?.name ?? '—'}</td>
-                <td className="ad-cell-hide">{new Date(p.updatedAt).toLocaleDateString()}</td>
-                <td className="ad-cell-corner"><a className="ad-btn ad-btn--sm" href={postUrl(p) + (p.status === 'draft' ? '?preview=1' : '')} target="_blank">View ↗</a></td>
-              </tr>
-            ))}
-            {posts.length === 0 && <tr><td colSpan={7}>No posts found.</td></tr>}
-          </tbody>
-        </table>
-      )}
-      {meta && <Pagination {...meta} onChange={setPage} onPageSizeChange={setPageSize} />}
+      <div className="ad-dash">
+        <section className="ad-panel">
+          <h2>At a glance</h2>
+          {!stats ? <p className="ad-hint">Loading…</p> : (
+            <ul className="ad-glance">
+              {GLANCE.map(([key, label, href]) => (
+                <li key={key}><Link href={href}><b>{stats.counts[key] ?? 0}</b> {label}</Link></li>
+              ))}
+            </ul>
+          )}
+          {stats && <p className="ad-hint">Uploads are stored {stats.storage === 's3' ? 'in the S3 bucket' : "on the server's disk"}.</p>}
+        </section>
+
+        <section className="ad-panel">
+          <h2>Create</h2>
+          <div className="ad-quick">
+            <Link className="ad-btn ad-btn--primary" href="/admin/posts/new">+ New post</Link>
+            <Link className="ad-btn" href="/admin/front-page">Edit front page</Link>
+            <Link className="ad-btn" href="/admin/categories">+ Category</Link>
+            <Link className="ad-btn" href="/admin/authors">+ Author</Link>
+            <Link className="ad-btn" href="/admin/media">Upload media</Link>
+          </div>
+          <p className="ad-hint">Pick the post type (guide, review, comparison, info post or page) on the new post screen.</p>
+        </section>
+
+        <section className="ad-panel">
+          <h2>Recently updated posts</h2>
+          {!stats ? <p className="ad-hint">Loading…</p> : stats.recentPosts.length === 0 ? (
+            <p className="ad-hint">Nothing yet. <Link href="/admin/posts/new">Write your first post</Link>.</p>
+          ) : (
+            <ul className="ad-activity">
+              {stats.recentPosts.map((p) => (
+                <li key={p.id}>
+                  <span className="ad-hint">{when(p.updatedAt)}</span>
+                  <span>
+                    <Link href={`/admin/posts/${p.id}`}>{p.title}</Link>{' '}
+                    <span className="ad-hint">· {adminTypeLabel(p.type)}{p.status === 'draft' ? ' · draft' : ''}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <Link href="/admin/posts" className="ad-more">All posts &amp; pages →</Link>
+        </section>
+
+        <section className="ad-panel">
+          <h2>New subscribers</h2>
+          {!stats ? <p className="ad-hint">Loading…</p> : stats.recentSubscribers.length === 0 ? (
+            <p className="ad-hint">No subscribers yet.</p>
+          ) : (
+            <ul className="ad-activity">
+              {stats.recentSubscribers.map((s) => (
+                <li key={s.id}><span className="ad-hint">{when(s.createdAt)}</span><span>{s.email}</span></li>
+              ))}
+            </ul>
+          )}
+          <Link href="/admin/subscribers" className="ad-more">All subscribers →</Link>
+        </section>
+      </div>
     </>
   );
 }

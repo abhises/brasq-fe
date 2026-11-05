@@ -24,8 +24,13 @@ export default async function AuthorPage(props: Props) {
   if (!d) notFound();
   const { author: a, posts } = d;
   const first = a.name.split(' ')[0];
+  const social = [a.linkedinUrl && { href: a.linkedinUrl, label: 'LinkedIn', icon: LINKEDIN }, a.youtubeUrl && { href: a.youtubeUrl, label: 'YouTube', icon: YOUTUBE }]
+    .filter((x): x is { href: string; label: string; icon: string } => !!x);
+  // Person schema: sameAs ties the author to their profiles for search engines
+  const ld = { '@context': 'https://schema.org', '@type': 'Person', name: a.name, jobTitle: a.role || undefined, description: a.short || undefined, image: a.avatarUrl || undefined, sameAs: social.length ? social.map((x) => x.href) : undefined };
   return (
     <div>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld).replace(/</g, '\\u003c') }} />
       <section className="bq-band-dark">
         <div className="bq-container" style={{ paddingTop: 44, paddingBottom: 44, display: 'flex', flexWrap: 'wrap', gap: 36, alignItems: 'center' }}>
           <Photo src={a.avatarUrl} alt={a.name} className="bq-photo--1" style={{ flex: '0 1 280px', maxWidth: 300, width: '100%', background: 'repeating-linear-gradient(135deg,#2a2a27 0 10px,#232320 10px 20px)' }} />
@@ -36,6 +41,11 @@ export default async function AuthorPage(props: Props) {
             <p style={{ margin: 0, fontSize: 17, lineHeight: 1.65, color: '#e6e6df', maxWidth: 640 }}>{a.bio}</p>
             <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', fontSize: 14, fontWeight: 700 }}>
               {a.email && <a href={`mailto:${a.email}`} style={{ color: '#fff' }}>{a.email}</a>}
+              {social.map((x) => (
+                <a key={x.label} href={x.href} target="_blank" rel="me noopener noreferrer" style={{ color: '#fff', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d={x.icon} /></svg>{x.label}
+                </a>
+              ))}
               <Link href="/contact" style={{ color: '#fff' }}>Contact the editors</Link>
             </div>
           </div>
@@ -90,3 +100,6 @@ export default async function AuthorPage(props: Props) {
     </div>
   );
 }
+
+const LINKEDIN = 'M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5M3 9.75h4V21H3zM9.5 9.75h3.8v1.6h.05c.53-1 1.83-2.05 3.77-2.05 4.03 0 4.78 2.65 4.78 6.1V21h-4v-4.9c0-1.17-.02-2.68-1.63-2.68-1.64 0-1.89 1.28-1.89 2.6V21h-4z';
+const YOUTUBE = 'M23.5 6.5a3 3 0 0 0-2.1-2.1C19.5 4 12 4 12 4s-7.5 0-9.4.4A3 3 0 0 0 .5 6.5C0 8.4 0 12 0 12s0 3.6.5 5.5a3 3 0 0 0 2.1 2.1c1.9.4 9.4.4 9.4.4s7.5 0 9.4-.4a3 3 0 0 0 2.1-2.1c.5-1.9.5-5.5.5-5.5s0-3.6-.5-5.5M9.6 15.6V8.4l6.3 3.6z';
